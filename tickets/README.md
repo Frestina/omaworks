@@ -44,4 +44,4 @@ of truth; each ticket links the sections it builds. Things left for later are in
 | # | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
 | 008 | [Moderation](008-moderation.md) | 003 | done |
-| 009 | [Seeding](009-seeding.md) | 004, 008 | in progress |
+| 009 | [Seeding](009-seeding.md) | 004, 008 | done |

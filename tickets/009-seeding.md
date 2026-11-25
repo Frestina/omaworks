@@ -107,8 +107,24 @@ How each row's commit and result were found:
 - Row 1 and row 5 name a plugin version that has a tag on an older commit. The rule
   takes the newest commit before the release instead, which has the same version.
 
+## Filed on 2026-11-25
+
+- The 14 bodies from [009-seeding-list.md](009-seeding-list.md) were filed from
+  Frestina with `report` and `from-issue`. They are issues #15 to #28, in list
+  order: row 1 is #15, row 14 is #28.
+- "Check report" passed all 14. Each got its `plugin:`, `omarchy:` and `result:`
+  labels. None got `needs-fix` or a comment.
+- The published reports.json (generated 2026-11-25T18:21:24Z) has all 14 rows.
+  Each report is counted, with `fromIssue` set to its source issue. 13 rows are on
+  4.0.3. One, `blacksheep.sysload`, is on 4.5.0.
+- Plugin pages show "from Omarchy issue #N" with a link. Checked on
+  `blacksheep.sysload`: "from Omarchy issue #17794".
+- None of the eight source issues (#10888, #10863, #10907, #10992, #10996, #11185,
+  #11932, #17794) has a cross-reference from Frestina/omaworks in its timeline. So
+  the backticks worked.
+
 ## Done when
 
 - [x] The list is in this ticket and the owner approved it.
-- [ ] Every seeded report links its source issue and passed the checks.
-- [ ] The site shows them as "from Omarchy issue #N".
+- [x] Every seeded report links its source issue and passed the checks.
+- [x] The site shows them as "from Omarchy issue #N".
