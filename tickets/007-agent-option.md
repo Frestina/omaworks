@@ -31,6 +31,9 @@ and write the report, and stop at a filled-in form.
   GitHub access could still post if it ignored the skill.
 - Tried once with the owner's default agent on a fictional plugin folder, recorded in
   the ticket.
+- Review follow-ups: the draft reaches `omaworks report` through files, not
+  through shell arguments; the spec says why the agent starts in the current
+  folder and not the plugin's.
 
 ## Not in this ticket
 
@@ -42,3 +45,7 @@ and write the report, and stop at a filled-in form.
 - [x] `--agent` starts the agent with the right prompt, with a test for the command
       line it builds.
 - [ ] One real run ended at a filled-in form, with nothing posted.
+- [x] The agent hands the draft over in files (`--what-file`, `--errors-file`),
+      so no report or log text is ever quoted into a shell command, with tests.
+- [x] The spec says the agent starts in the current folder, never the plugin's,
+      and why.

@@ -574,8 +574,8 @@ How it decides (ticket 006):
   prints one plain line starting `omaworks:` and exits with 1. The form is not
   opened.
 - **`--no-open`** prints the link without opening the browser.
-- **`--what` and `--errors`** fill What happens and Error lines with the given
-  text, cleaned as below. The agent option uses them. See
+- **`--what-file` and `--errors-file`** fill What happens and Error lines with
+  the text in a file, cleaned as below. The agent option uses them. See
   [The agent option](#the-agent-option).
 - **The browser.** The link is printed before `xdg-open` runs. If `xdg-open`
   fails, the shortcut says so and the reporter opens the printed link.
@@ -624,19 +624,30 @@ How it works (ticket 007):
   and output are a terminal, `omarchy-agent-prompt <prompt>` otherwise. The prompt
   is one argument. It names the plugin, the full path of `skills/report/SKILL.md`
   and the full path of `bin/omaworks` in the same checkout, since `omaworks` may
-  not be on the PATH. `omaworks` replaces itself with `omarchy-agent-prompt`, and
-  the agent starts in the current folder.
+  not be on the PATH. `omaworks` replaces itself with `omarchy-agent-prompt`.
+- **The folder.** The agent starts in the current folder, never in the plugin's
+  checkout. A checkout can hold an `AGENTS.md` or `CLAUDE.md` by the plugin's
+  author, and many agents load those as instructions. A bar button keeps to this.
 - **Missing.** No `omarchy-agent-prompt` on the PATH prints one `omaworks:` line
   and exits with 1, before anything else is printed.
-- **Alone.** `--agent` can't be combined with `--logs`, `--what`, `--errors` or
-  `--no-open`. That is a usage error.
+- **Alone.** `--agent` can't be combined with `--logs`, `--what-file`,
+  `--errors-file` or `--no-open`. That is a usage error.
 - **The draft.** The agent fills the form through two options of the shortcut:
-  `--what <text>` for What happens and `--errors <lines>` for Error lines. Both
-  are cleaned by `omaworks/clean.py`, line by line, before they go into the link,
-  so rule 3 holds even when the agent misses something. `--errors` and `--logs`
-  both fill Error lines, so they can't be combined. When the link would be too
-  long, the error lines are left out first and then What happens, each printed
-  for the reporter to paste.
+  `--what-file <path>` for What happens and `--errors-file <path>` for Error
+  lines. They take files, not text, because the draft is built from untrusted
+  text: log lines plugins write, reports by strangers, release notes. Text quoted
+  into a shell command breaks at an apostrophe, which QML errors and plain
+  sentences hold, and in double quotes `$(…)` and backticks run. So report text
+  never reaches a shell. The skill has the agent write the files with its own
+  file tool into a `mktemp -d` folder, pass only the paths, and remove the folder.
+- **Reading the files.** Each is read as UTF-8 and cleaned by
+  `omaworks/clean.py`, line by line, before it goes into the link, so rule 3
+  holds even when the agent misses something. A missing, unreadable, non-UTF-8
+  or bigger than 64 KB file prints one `omaworks:` line and exits with 1.
+  `--errors-file` and `--logs` both fill Error lines, so they can't be combined.
+  Options can't be shortened, so `--what` is not taken for `--what-file`. When
+  the link would be too long, the error lines are left out first and then What
+  happens, each printed for the reporter to paste.
 
 **Limit.** Omarchy starts agents with their approval prompts off. The skill forbids
 posting and omaworks gives the agent no command that posts, but an agent with its own

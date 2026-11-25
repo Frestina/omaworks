@@ -3,8 +3,10 @@
 See SPEC.md, "The shortcut". It reads the Omarchy version and the plugin's
 commit on this machine, builds the link to the report form, prints it and
 opens it in the browser. With --logs it adds the plugin's lines from the
-shell's log, cleaned of personal details and shown first. --what and
---errors take a draft's text, cleaned the same way. --agent hands the
+shell's log, cleaned of personal details and shown first. --what-file and
+--errors-file take a draft's text from files, cleaned the same way. Files,
+because the text is untrusted and must never be quoted into a shell
+command. --agent hands the
 report to the default coding agent instead: see omaworks/agent.py.
 
 It sends nothing and needs no GitHub token. The reporter presses Submit.
@@ -44,6 +46,10 @@ NOISE = [
 MAX_QUOTE = 80
 
 TIMEOUT = 30
+
+# Largest draft file read for --what-file or --errors-file. The link holds
+# far less, so anything bigger is not a draft.
+MAX_DRAFT = 64 * 1024
 
 
 class Stop(Exception):
@@ -244,6 +250,28 @@ def log_lines(system, plugin):
     return lines
 
 
+def read_draft(path, option):
+    """The text of a draft file, as UTF-8. Raises Stop."""
+    name = _quote(path)
+    try:
+        with open(path, "rb") as f:
+            data = f.read(MAX_DRAFT + 1)
+    except FileNotFoundError:
+        raise Stop(f"{option}: there is no file {name}.") from None
+    except IsADirectoryError:
+        raise Stop(f"{option}: {name} is a folder, not a file.") from None
+    except OSError as e:
+        raise Stop(f"{option}: can't read {name}: {e.strerror or e}.") from None
+    if len(data) > MAX_DRAFT:
+        raise Stop(
+            f"{option}: {name} is bigger than {MAX_DRAFT // 1024} KB, too big for a draft."
+        )
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        raise Stop(f"{option}: {name} isn't UTF-8 text.") from None
+
+
 def _draft(clean, text):
     """The reporter's or the agent's text, cleaned line by line."""
     if not text:
@@ -264,8 +292,9 @@ def report(plugin, logs=False, open_browser=True, system=None, out=None,
            what=None, errors=None):
     """Build the link, print it and open it. Raises Stop.
 
-    what and errors are a draft's What happens and Error lines. They are
-    cleaned of personal details before they go into the link.
+    what and errors are a draft's What happens and Error lines, as read by
+    read_draft. They are cleaned of personal details before they go into the
+    link.
     """
     system = system or System()
     out = out or sys.stdout
@@ -334,6 +363,10 @@ def agent(plugin, system=None, out=None):
 
     The plugin is checked first, so a typo doesn't start the agent. The
     agent reads the versions itself, through `omaworks report`.
+
+    The agent starts in the current folder, never in the plugin's checkout:
+    a checkout can hold an AGENTS.md or CLAUDE.md by the plugin's author,
+    which many agents would load as instructions.
     """
     system = system or System()
     out = out or sys.stdout
@@ -365,6 +398,8 @@ def parser():
     commands = top.add_subparsers(dest="command", required=True, metavar="command")
     cmd = commands.add_parser(
         "report",
+        # --what would otherwise be taken for --what-file, and the text for a path.
+        allow_abbrev=False,
         help="open the report form with this machine's versions filled in",
         description=(
             "Open the report form with the Omarchy version and the plugin's "
@@ -378,12 +413,14 @@ def parser():
         "with personal details removed",
     )
     cmd.add_argument(
-        "--what", metavar="TEXT",
-        help="fill in What happens with this text, with personal details removed",
+        "--what-file", metavar="PATH",
+        help="fill in What happens with the text in this file, with personal "
+        "details removed",
     )
     cmd.add_argument(
-        "--errors", metavar="LINES",
-        help="fill in Error lines with these lines, with personal details removed",
+        "--errors-file", metavar="PATH",
+        help="fill in Error lines with the lines in this file, with personal "
+        "details removed",
     )
     cmd.add_argument(
         "--no-open", dest="open", action="store_false",
@@ -405,21 +442,27 @@ def main(argv=None, system=None, out=None, err=None):
     if args.agent:
         given = [
             flag for flag, used in (
-                ("--logs", args.logs), ("--what", args.what is not None),
-                ("--errors", args.errors is not None), ("--no-open", not args.open),
+                ("--logs", args.logs), ("--what-file", args.what_file is not None),
+                ("--errors-file", args.errors_file is not None),
+                ("--no-open", not args.open),
             ) if used
         ]
         if given:
             top.error(f"--agent can't be used with {', '.join(given)}: the agent fills in the form")
-    if args.logs and args.errors is not None:
-        top.error("--logs and --errors both fill in Error lines: use one")
+    if args.logs and args.errors_file is not None:
+        top.error("--logs and --errors-file both fill in Error lines: use one")
     try:
         if args.agent:
             agent(args.plugin, system=system, out=out)
         else:
+            what = errors = None
+            if args.what_file is not None:
+                what = read_draft(args.what_file, "--what-file")
+            if args.errors_file is not None:
+                errors = read_draft(args.errors_file, "--errors-file")
             report(
                 args.plugin, logs=args.logs, open_browser=args.open, system=system,
-                out=out, what=args.what, errors=args.errors,
+                out=out, what=what, errors=errors,
             )
     except Stop as stop:
         print(f"omaworks: {stop}", file=err)
