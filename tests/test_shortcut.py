@@ -115,6 +115,26 @@ def query(url):
     return parse_qs(urlsplit(url).query, keep_blank_values=True)
 
 
+# All a link may hold. What happens and Error lines never go in it: GitHub
+# locks every field a link fills in.
+FIXED = {"template", "title", "plugin", "omarchy", "commit"}
+
+WHAT_HEADING = (
+    "What happens, with personal details removed. Paste it into the form's "
+    "What happens, and change anything you want before Submit:"
+)
+ERRORS_HEADING = (
+    "Error lines, with personal details removed. Paste them into the form's "
+    "Error lines, and change anything you want before Submit:"
+)
+LOG_HEADING = ERRORS_HEADING.replace("Error lines,", "Error lines from the shell's log,", 1)
+
+
+def shown(heading, text):
+    """How the shortcut prints a text under its heading."""
+    return f"{heading}\n\n{text}\n\n"
+
+
 @unittest.skipUnless(GIT, "needs git")
 class ShortcutTest(unittest.TestCase):
     def setUp(self):
@@ -298,12 +318,10 @@ class ShortcutTest(unittest.TestCase):
             "WARN: file://~/.config/omarchy/plugins/example.sky-clock/sync.js[7:-1]: "
             "fetch for <user> on <host> failed, token=<removed>",
         ]
-        self.assertEqual(query(url)["errors"], ["\n".join(expected)])
-        for line in expected:
-            self.assertIn(f"  {line}\n", printed_before)
+        self.assertEqual(set(query(url)), FIXED)
+        self.assertTrue(printed_before.startswith(shown(LOG_HEADING, "\n".join(expected))))
         for text in ("mira", "abc123secret", "\x1b", "not ours", "built in", "outside"):
             self.assertNotIn(text, printed_before.replace("example.sky-clock", ""))
-            self.assertNotIn(text, query(url)["errors"][0])
         self.assertIn(shortcut.JOURNAL, system.calls)
 
     def test_the_journal_command_reads_the_shell_since_boot(self):
@@ -319,14 +337,15 @@ class ShortcutTest(unittest.TestCase):
         system = self.system(log=(0, journal(self.home, *self.LOG[2:5]), ""))
         printed = self.run_report(system, logs=True)
         self.assertIn("has no lines from example.sky-clock", printed)
-        self.assertNotIn("errors", query(system.opened[0][0]))
+        self.assertNotIn("Error lines", printed)
+        self.assertEqual(set(query(system.opened[0][0])), FIXED)
 
     def test_without_logs_the_journal_is_not_read(self):
         checkout(self.home, self.folder)
         system = self.system(log=(0, journal(self.home, *self.LOG), ""))
         self.run_report(system)
         self.assertNotIn(shortcut.JOURNAL, system.calls)
-        self.assertNotIn("errors", query(system.opened[0][0]))
+        self.assertEqual(set(query(system.opened[0][0])), FIXED)
 
     def test_journalctl_missing(self):
         checkout(self.home, self.folder)
@@ -336,23 +355,23 @@ class ShortcutTest(unittest.TestCase):
         checkout(self.home, self.folder)
         self.assertStops(self.system(log=(1, "", "")), "couldn't read the shell's log", logs=True)
 
-    def test_too_many_lines_are_left_out_of_the_link(self):
+    def test_many_lines_are_all_printed(self):
         checkout(self.home, self.folder)
         lines = [
             f"WARN: qs://{{home}}/.config/omarchy/plugins/example.sky-clock/Panel.qml:{n}:1: x"
-            for n in range(200)
+            for n in range(400)
         ]
         system = self.system(log=(0, journal(self.home, *lines), ""))
-        printed = self.run_report(system, logs=True)
+        self.run_report(system, logs=True)
         [(url, before)] = system.opened
-        self.assertNotIn("errors", query(url))
-        self.assertLessEqual(len(url), link.MAX_LINK_LENGTH)
-        self.assertIn("Paste them into the form's Error lines yourself", before)
-        self.assertIn("Panel.qml:199:1: x", printed)
+        self.assertEqual(set(query(url)), FIXED)
+        self.assertIn("Panel.qml:0:1: x\n", before)
+        self.assertIn("Panel.qml:399:1: x\n", before)
+        self.assertNotIn("too long", before)
 
     # A draft from --what and --errors
 
-    def test_a_draft_is_cleaned_into_the_link(self):
+    def test_a_draft_is_cleaned_and_printed_not_linked(self):
         checkout(self.home, self.folder)
         system = self.system()
         what = "  The clock is gone from mira's bar on mira-laptop.\nMail mira@example.org.  \n"
@@ -361,46 +380,70 @@ class ShortcutTest(unittest.TestCase):
             "Panel.qml:41:5: TypeError\n{home}/notes.txt password=hunter2"
         ).replace("{home}", self.home)
         self.run_report(system, what=what, errors=errors)
-        [(url, _)] = system.opened
-        self.assertEqual(
-            query(url)["what"],
-            ["The clock is gone from <user>'s bar on <host>.\nMail <email>."],
+        [(url, before)] = system.opened
+        self.assertEqual(set(query(url)), FIXED)
+        what_clean = "The clock is gone from <user>'s bar on <host>.\nMail <email>."
+        errors_clean = (
+            "WARN: qs://~/.config/omarchy/plugins/example.sky-clock/Panel.qml:41:5: "
+            "TypeError\n~/notes.txt password=<removed>"
         )
-        self.assertEqual(
-            query(url)["errors"],
-            ["WARN: qs://~/.config/omarchy/plugins/example.sky-clock/Panel.qml:41:5: "
-             "TypeError\n~/notes.txt password=<removed>"],
-        )
+        # What happens first, then Error lines, then the link.
+        self.assertTrue(before.startswith(
+            shown(WHAT_HEADING, what_clean) + shown(ERRORS_HEADING, errors_clean)
+        ))
+        self.assertLess(before.index("Error lines"), before.index(url))
 
-    def test_an_empty_draft_is_left_out(self):
+    def test_an_empty_draft_prints_nothing(self):
         checkout(self.home, self.folder)
         system = self.system()
         self.run_report(system, what=" \n ", errors="")
-        url = system.opened[0][0]
-        self.assertNotIn("what", query(url))
-        self.assertNotIn("errors", query(url))
+        [(url, before)] = system.opened
+        self.assertEqual(set(query(url)), FIXED)
+        self.assertNotIn("What happens", before)
+        self.assertNotIn("Error lines", before)
+        self.assertTrue(before.startswith("Omarchy 4.5.0-3, "))
 
-    def test_long_error_lines_are_shown_and_left_out(self):
+    def test_only_errors_prints_only_errors(self):
         checkout(self.home, self.folder)
         system = self.system()
-        errors = "\n".join(f"Panel.qml:{n}:1: x" for n in range(400))
-        self.run_report(system, what="The clock is gone.", errors=errors)
-        [(url, before)] = system.opened
-        self.assertNotIn("errors", query(url))
-        self.assertEqual(query(url)["what"], ["The clock is gone."])
-        self.assertIn("  Panel.qml:399:1: x\n", before)
-        self.assertIn("Paste them into the form's Error lines yourself", before)
+        self.run_report(system, errors="Panel.qml:41:5: TypeError")
+        before = system.opened[0][1]
+        self.assertTrue(before.startswith(shown(ERRORS_HEADING, "Panel.qml:41:5: TypeError")))
+        self.assertNotIn("What happens", before)
 
-    def test_a_long_what_happens_is_shown_and_left_out(self):
+    def test_what_happens_comes_before_the_logs(self):
         checkout(self.home, self.folder)
-        system = self.system()
-        what = "\n".join(f"Line {n} of what happens." for n in range(300))
-        self.run_report(system, what=what, errors="Panel.qml:41:5: TypeError")
-        [(url, before)] = system.opened
-        self.assertNotIn("what", query(url))
-        self.assertNotIn("errors", query(url))
-        self.assertIn("  Line 299 of what happens.\n", before)
-        self.assertIn("Paste it into the form's What happens yourself", before)
+        system = self.system(log=(0, journal(self.home, *self.LOG), ""))
+        self.run_report(system, logs=True, what="The clock is gone.")
+        before = system.opened[0][1]
+        self.assertTrue(before.startswith(shown(WHAT_HEADING, "The clock is gone.")))
+        self.assertLess(before.index(WHAT_HEADING), before.index(LOG_HEADING))
+
+    def test_free_text_never_goes_in_the_link(self):
+        # Long, short, with link syntax, with a newline: none of it reaches the
+        # link. See SPEC.md, "Only the fixed fields go in the link".
+        checkout(self.home, self.folder)
+        texts = [
+            "The clock is gone.",
+            "x" * 5000,
+            "a&what=injected&errors=injected#frag",
+            "one\ntwo\n\nthree",
+            "café ☕",
+        ]
+        for text in texts:
+            for kw in (dict(what=text), dict(errors=text), dict(what=text, errors=text)):
+                with self.subTest(text=text[:20], fields=sorted(kw)):
+                    system = self.system()
+                    for open_browser in (True, False):
+                        printed = self.run_report(system, open_browser=open_browser, **kw)
+                    urls = [u for u, _ in system.opened]
+                    urls.append(printed.strip().splitlines()[-1])
+                    for url in urls:
+                        self.assertEqual(set(query(url)), FIXED)
+                        self.assertLess(len(url), 500)
+                        self.assertNotIn("injected", url)
+                        for value in sum(query(url).values(), []):
+                            self.assertNotIn(text, value)
 
     # Draft files from --what-file and --errors-file
 
@@ -428,9 +471,11 @@ class ShortcutTest(unittest.TestCase):
             "--errors-file", self.write("errors.txt", self.ERRORS),
         )
         self.assertEqual(code, 0, err)
-        [(url, _)] = system.opened
-        self.assertEqual(query(url)["what"], [self.WHAT.strip()])
-        self.assertEqual(query(url)["errors"], [self.ERRORS.strip()])
+        [(url, before)] = system.opened
+        self.assertEqual(set(query(url)), FIXED)
+        self.assertTrue(before.startswith(
+            shown(WHAT_HEADING, self.WHAT.strip()) + shown(ERRORS_HEADING, self.ERRORS.strip())
+        ))
         self.assertFalse(os.path.exists("pwned"))
 
     def test_draft_files_are_cleaned(self):
@@ -442,9 +487,14 @@ class ShortcutTest(unittest.TestCase):
             "--errors-file", self.write("errors.txt", errors),
         )
         self.assertEqual(code, 0, err)
-        url = system.opened[0][0]
-        self.assertEqual(query(url)["what"], ["Gone from <user>'s bar on <host>.\nMail <email>."])
-        self.assertEqual(query(url)["errors"], ["~/notes.txt password=<removed>"])
+        [(url, before)] = system.opened
+        self.assertEqual(set(query(url)), FIXED)
+        self.assertTrue(before.startswith(
+            shown(WHAT_HEADING, "Gone from <user>'s bar on <host>.\nMail <email>.")
+            + shown(ERRORS_HEADING, "~/notes.txt password=<removed>")
+        ))
+        for text in ("mira", "hunter2", self.home):
+            self.assertNotIn(text, self.out.getvalue())
 
     def test_draft_file_problems_stop_with_one_line(self):
         checkout(self.home, self.folder)
@@ -744,7 +794,8 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(done.returncode, 0, done.stderr)
         with open(self.opened) as f:
             url = f.read()
-        self.assertEqual(query(url)["what"], ["It doesn't show. $(touch pwned) `touch pwned`"])
+        self.assertEqual(set(query(url)), FIXED)
+        self.assertIn("\nIt doesn't show. $(touch pwned) `touch pwned`\n", done.stdout)
         self.assertFalse(os.path.exists(os.path.join(self.tmp, "pwned")))
 
     def test_agent_without_omarchy_agent_prompt(self):

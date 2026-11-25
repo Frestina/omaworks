@@ -95,7 +95,7 @@ One report is one GitHub issue, made from the issue form. Its fields:
 | Plugin commit | the shortcut, from the plugin's git checkout | `3f2a91c` |
 | Result | the user | Works / Works with problems / Broken |
 | What happens | the user | "Clock disappears from the bar after updating." |
-| Error lines | optional, the shortcut or the agent | `BarWidget.qml:41: TypeError: …` |
+| Error lines | optional, the user, pasting what the shortcut or the agent printed | `BarWidget.qml:41: TypeError: …` |
 
 The form ends with one line: "Your report is public and released as CC0 (public
 domain)." That lets any tool reuse `reports.json`.
@@ -641,11 +641,22 @@ To look at the site on this machine with made-up reports:
 a link to the issue form with those fields filled in, and opens it in the browser. It
 posts nothing and needs no GitHub token.
 
-With `--logs` it also adds the plugin's error lines from the shell's log. The shell
-logs to the user journal as `omarchy-shell`. Only lines that name the plugin's own
-files since the last boot are taken, cleaned as in
-[What must never happen](#what-must-never-happen) rule 3, and shown before the form
-opens.
+With `--logs` it also prints the plugin's error lines from the shell's log, for the
+reporter to paste into the form. The shell logs to the user journal as
+`omarchy-shell`. Only lines that name the plugin's own files since the last boot
+are taken, cleaned as in [What must never happen](#what-must-never-happen) rule 3,
+and printed before the form opens.
+
+**Only the fixed fields go in the link** (decided 2026-11-25, for ticket 011). The
+link fills in Plugin, Omarchy version and Plugin commit, and the title. What
+happens and Error lines never go in it. GitHub locks every field a link fills in:
+the reporter can't delete or change a word of it (see "Prefilling the form" under
+[Open questions](#open-questions)). For the three fixed fields that does no harm,
+since they come from the machine. For free text it would take away the reporter's
+last word on what goes public, and editing the issue after Submit doesn't undo
+that, since GitHub shows anyone an issue's earlier versions. So the shortcut
+prints the text, cleaned, and the reporter pastes it. Pasted text can be edited
+like anything typed.
 
 How it decides (ticket 006):
 
@@ -664,9 +675,14 @@ How it decides (ticket 006):
   prints one plain line starting `omaworks:` and exits with 1. The form is not
   opened.
 - **`--no-open`** prints the link without opening the browser.
-- **`--what-file` and `--errors-file`** fill What happens and Error lines with
-  the text in a file, cleaned as below. The agent option uses them. See
-  [The agent option](#the-agent-option).
+- **`--what-file` and `--errors-file`** print a draft's What happens and Error
+  lines from a file, cleaned as below, for the reporter to paste. The agent
+  option uses them. See [The agent option](#the-agent-option).
+- **What it prints.** Each text under its own heading, "What happens" first and
+  then "Error lines", each with a line saying to paste it into that field of the
+  form and to change anything before Submit. Then the link. Nothing is printed
+  for a text that is empty. The text is printed as it is, with no indent, so it
+  pastes as it is.
 - **The browser.** The link is printed before `xdg-open` runs. If `xdg-open`
   fails, the shortcut says so and the reporter opens the printed link.
 - **A plugin's lines.** A line is the plugin's when it names a path under
@@ -674,7 +690,7 @@ How it decides (ticket 006):
   `example.sky-clock-pro` out. Every plugin in that folder gets the shell's
   `Module path "…" is outside of the config folder.` warning, so that line is
   left out. A line repeated in the log is shown once. No lines means the shortcut
-  says so and opens the form without them.
+  says so and prints none.
 - **Cleaning** is in `omaworks/clean.py`. Colour codes go. The home path becomes
   `~`, and any other `/home/<name>` becomes `/home/<user>`. Email addresses become
   `<email>`. The hostname becomes `<host>` and the username `<user>`, as whole
@@ -685,9 +701,8 @@ How it decides (ticket 006):
 - **What cleaning keeps.** The plugin's ID and the paths of files inside its
   folder are left as they are. `omarchy plugin clone` names a clone
   `<username>.<id>`, and the ID is in the Plugin field anyway.
-- **Too long.** When the lines make the link longer than 3500 characters, the
-  link leaves them out and the shortcut asks the reporter to paste them. They are
-  already shown above it.
+- **Link length.** With only the fixed fields in it, the link stays far under
+  3500 characters. `omaworks/link.py` still refuses a longer one.
 
 **Installing** (decided 2026-11-25, for ticket 010). A reporter clones the repo and
 links the command into `~/.local/bin`. The README gives the lines to copy:
@@ -748,7 +763,7 @@ How it works (ticket 007):
   and exits with 1, before anything else is printed.
 - **Alone.** `--agent` can't be combined with `--logs`, `--what-file`,
   `--errors-file` or `--no-open`. That is a usage error.
-- **The draft.** The agent fills the form through two options of the shortcut:
+- **The draft.** The agent hands its draft to the shortcut through two options:
   `--what-file <path>` for What happens and `--errors-file <path>` for Error
   lines. They take files, not text, because the draft is built from untrusted
   text: log lines plugins write, reports by strangers, release notes. Text quoted
@@ -756,14 +771,14 @@ How it works (ticket 007):
   sentences hold, and in double quotes `$(…)` and backticks run. So report text
   never reaches a shell. The skill has the agent write the files with its own
   file tool into a `mktemp -d` folder, pass only the paths, and remove the folder.
+  The shortcut prints the draft for the reporter to paste, as above, so the
+  reporter can still change the agent's words before Submit.
 - **Reading the files.** Each is read as UTF-8 and cleaned by
-  `omaworks/clean.py`, line by line, before it goes into the link, so rule 3
-  holds even when the agent misses something. A missing, unreadable, non-UTF-8
+  `omaworks/clean.py`, line by line, before it is printed, so rule 3 holds even
+  when the agent misses something. A missing, unreadable, non-UTF-8
   or bigger than 64 KB file prints one `omaworks:` line and exits with 1.
   `--errors-file` and `--logs` both fill Error lines, so they can't be combined.
-  Options can't be shortened, so `--what` is not taken for `--what-file`. When
-  the link would be too long, the error lines are left out first and then What
-  happens, each printed for the reporter to paste.
+  Options can't be shortened, so `--what` is not taken for `--what-file`.
 
 **Limit.** Omarchy starts agents with their approval prompts off. The skill forbids
 posting and omaworks gives the agent no command that posts, but an agent with its own
@@ -874,14 +889,23 @@ Checked on 2026-11-25:
   replaces the form's `[report] ` prefix. The `result` dropdown does not fill in,
   by option text (`Works with problems`, `Broken`) or by number, so the link leaves
   it out and the reporter picks the result, which they do anyway.
+- **A field the link fills in is locked.** Checked again on 2026-11-25 in
+  Chromium, signed in, with made-up values. Deleting all of a filled-in field,
+  deleting one character or typing more: the text springs back each time. That
+  held for What happens, Error lines and Plugin commit. A field the link leaves
+  empty edits normally. So free text stays out of the link, see
+  [The shortcut](#the-shortcut).
+- **GitHub keeps a draft per tab.** The form saves each field in the tab's
+  session storage, keyed by repo, form and field, and on the next load in that
+  tab a saved title beat the link's. `xdg-open` opens a new tab, which has no
+  draft.
 - **Link length.** A reporter who isn't signed in to GitHub is sent through
   `github.com/login?return_to=<the link>`, which encodes the link again. Measured
   with links where every character of the text is escaped, the worst case: a
   3973-character link reached the login page, a 4273-character one gave a server
   error, and from about 6000 the login drops the link. Signed-in links work up to
   about 8000. So `omaworks/link.py` refuses links over 3500 characters, counted
-  after encoding. A longer link means the caller drops the error lines and tells
-  the user to paste them.
+  after encoding. Free text no longer goes in the link, so it stays far under.
 - **The shell's log.** The shell logs to the user journal as `omarchy-shell`. A
   third-party plugin's warnings name its file, such as
   `qs:///home/<user>/.config/omarchy/plugins/<id>/Panel.qml:730:17: …`, with ANSI

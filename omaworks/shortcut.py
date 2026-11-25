@@ -2,12 +2,16 @@
 
 See SPEC.md, "The shortcut". It reads the Omarchy version and the plugin's
 commit on this machine, builds the link to the report form, prints it and
-opens it in the browser. With --logs it adds the plugin's lines from the
-shell's log, cleaned of personal details and shown first. --what-file and
---errors-file take a draft's text from files, cleaned the same way. Files,
-because the text is untrusted and must never be quoted into a shell
-command. --agent hands the
-report to the default coding agent instead: see omaworks/agent.py.
+opens it in the browser. With --logs it prints the plugin's lines from the
+shell's log, cleaned of personal details, for the reporter to paste.
+--what-file and --errors-file print a draft's text from files, cleaned the
+same way. Files, because the text is untrusted and must never be quoted into
+a shell command. --agent hands the report to the default coding agent
+instead: see omaworks/agent.py.
+
+Free text never goes in the link. GitHub locks every field a link fills in,
+so the reporter couldn't change a word of it before Submit. The link holds
+only the plugin, the Omarchy version and the commit.
 
 It sends nothing and needs no GitHub token. The reporter presses Submit.
 Anything it can't find stops it with a plain message. Nothing is guessed.
@@ -27,7 +31,7 @@ import sys
 from omaworks import agent as agent_option
 from omaworks.check import COMMIT_RE, DEV_RE, ID_RE, release_of
 from omaworks.clean import Cleaner, keep_plugin, strip_colours
-from omaworks.link import LinkTooLong, build_report_link
+from omaworks.link import build_report_link
 
 PLUGINS = os.path.join(".config", "omarchy", "plugins")
 
@@ -47,8 +51,8 @@ MAX_QUOTE = 80
 
 TIMEOUT = 30
 
-# Largest draft file read for --what-file or --errors-file. The link holds
-# far less, so anything bigger is not a draft.
+# Largest draft file read for --what-file or --errors-file. A form field
+# holds far less, so anything bigger is not a draft.
 MAX_DRAFT = 64 * 1024
 
 
@@ -281,20 +285,21 @@ def _draft(clean, text):
 
 
 def _show(out, heading, text):
+    """Print text under its heading, as it is, so it pastes as it is."""
     print(heading, file=out)
     print("", file=out)
-    for line in text.splitlines():
-        print(f"  {line}", file=out)
+    print(text, file=out)
     print("", file=out)
 
 
 def report(plugin, logs=False, open_browser=True, system=None, out=None,
            what=None, errors=None):
-    """Build the link, print it and open it. Raises Stop.
+    """Print the draft and the link, and open the link. Raises Stop.
 
     what and errors are a draft's What happens and Error lines, as read by
-    read_draft. They are cleaned of personal details before they go into the
-    link.
+    read_draft. They are cleaned of personal details and printed for the
+    reporter to paste. They never go in the link: see SPEC.md, "Only the
+    fixed fields go in the link".
     """
     system = system or System()
     out = out or sys.stdout
@@ -307,46 +312,26 @@ def report(plugin, logs=False, open_browser=True, system=None, out=None,
     errors = _draft(clean, errors)
     if logs:
         lines = log_lines(system, plugin)
-        if lines:
-            errors = "\n".join(lines)
-            _show(
-                out,
-                "The plugin's lines from the shell's log, with personal details removed:",
-                errors,
-            )
-        else:
-            print(f"The shell's log has no lines from {plugin} since the last boot.", file=out)
+        errors = "\n".join(lines) or None
+    link = build_report_link(plugin, version, commit)
 
-    def build():
-        try:
-            return build_report_link(plugin, version, commit, what=what, errors=errors)
-        except LinkTooLong:
-            return None
-
-    # Too long: the error lines go first, then What happens. Each is shown
-    # here for the reporter to paste.
-    link = build()
-    if link is None and errors is not None:
-        if not logs:
-            _show(out, "Error lines, with personal details removed:", errors)
-        errors = None
-        print(
-            "These lines make the link too long, so they are left out. Paste them "
-            "into the form's Error lines yourself.",
-            file=out,
+    if what:
+        _show(
+            out,
+            "What happens, with personal details removed. Paste it into the "
+            "form's What happens, and change anything you want before Submit:",
+            what,
         )
-        link = build()
-    if link is None and what is not None:
-        _show(out, "What happens, with personal details removed:", what)
-        what = None
-        print(
-            "This text makes the link too long, so it is left out. Paste it "
-            "into the form's What happens yourself.",
-            file=out,
+    if logs and not errors:
+        print(f"The shell's log has no lines from {plugin} since the last boot.", file=out)
+    if errors:
+        source = " from the shell's log" if logs else ""
+        _show(
+            out,
+            f"Error lines{source}, with personal details removed. Paste them into "
+            "the form's Error lines, and change anything you want before Submit:",
+            errors,
         )
-        link = build()
-    if link is None:
-        raise Stop("The link to the form is too long to open.")
 
     print(f"Omarchy {version}, {plugin} at {commit}.", file=out)
     if not open_browser:
@@ -409,18 +394,18 @@ def parser():
     cmd.add_argument("plugin", help="the plugin's ID, such as example.sky-clock")
     cmd.add_argument(
         "--logs", action="store_true",
-        help="add the plugin's lines from the shell's log since the last boot, "
-        "with personal details removed",
+        help="print the plugin's lines from the shell's log since the last boot, "
+        "with personal details removed, to paste into Error lines",
     )
     cmd.add_argument(
         "--what-file", metavar="PATH",
-        help="fill in What happens with the text in this file, with personal "
-        "details removed",
+        help="print the text in this file, with personal details removed, to "
+        "paste into What happens",
     )
     cmd.add_argument(
         "--errors-file", metavar="PATH",
-        help="fill in Error lines with the lines in this file, with personal "
-        "details removed",
+        help="print the lines in this file, with personal details removed, to "
+        "paste into Error lines",
     )
     cmd.add_argument(
         "--no-open", dest="open", action="store_false",
@@ -428,8 +413,8 @@ def parser():
     )
     cmd.add_argument(
         "--agent", action="store_true",
-        help="let your default coding agent look into it and fill in the form. "
-        "It stops at the form, and you press Submit",
+        help="let your default coding agent look into it and write a draft for "
+        "you to paste. It stops at the form, and you press Submit",
     )
     return top
 
@@ -448,9 +433,9 @@ def main(argv=None, system=None, out=None, err=None):
             ) if used
         ]
         if given:
-            top.error(f"--agent can't be used with {', '.join(given)}: the agent fills in the form")
+            top.error(f"--agent can't be used with {', '.join(given)}: the agent writes the draft")
     if args.logs and args.errors_file is not None:
-        top.error("--logs and --errors-file both fill in Error lines: use one")
+        top.error("--logs and --errors-file both give Error lines: use one")
     try:
         if args.agent:
             agent(args.plugin, system=system, out=out)

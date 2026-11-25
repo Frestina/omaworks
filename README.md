@@ -39,17 +39,19 @@ rm -rf ~/.local/share/omaworks
 ## Report
 
 - `omaworks report <plugin>` opens the form with both versions filled in.
-- `omaworks report --logs <plugin>` also puts the plugin's error lines from the
-  journal in the form.
+- `omaworks report --logs <plugin>` also prints the plugin's error lines from the
+  journal, with personal details removed, for you to paste into the form.
 - `omaworks report --agent <plugin>` lets your coding agent look into the plugin
-  and fill in the form.
+  and write a draft. It prints the draft for you to paste into the form.
+
+You can change any word you paste before you press Submit.
 
 Nothing is sent until you press Submit on GitHub.
 
 ## Limits
 
 `omaworks report --agent <plugin>` lets your default coding agent look into a
-plugin and fill in the form. Its skill forbids posting, and omaworks gives it no
+plugin and write a draft for you to paste. Its skill forbids posting, and omaworks gives it no
 command that posts. But Omarchy starts agents with their approval prompts off, so
 an agent with its own GitHub access could still post if it ignored the skill.
 

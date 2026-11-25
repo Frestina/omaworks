@@ -1,6 +1,6 @@
 ---
 name: omaworks-report
-description: Help the user report whether an Omarchy plugin works on their Omarchy version, for omaworks. Collect the facts, read the plugin's error lines, look for existing reports, write a clean draft, and open the filled-in report form. Never post. The user presses Submit.
+description: Help the user report whether an Omarchy plugin works on their Omarchy version, for omaworks. Collect the facts, read the plugin's error lines, look for existing reports, write a clean draft, and open the report form with the draft printed for the user to paste. Never post. The user presses Submit.
 ---
 
 # Write an omaworks report
@@ -10,7 +10,8 @@ version. One report is one GitHub issue in Frestina/omaworks. The user asked you
 to help them write one for one plugin. The prompt names the plugin and the
 `omaworks` command. Where this file says `omaworks`, use that command.
 
-You do the looking and the writing. The user checks the form and presses Submit.
+You do the looking and the writing. The user pastes the draft into the form,
+changes what they want, and presses Submit.
 
 ## Rules
 
@@ -159,9 +160,12 @@ a shell, an apostrophe breaks the command, and `$(…)` or backticks would run.
    `--errors-file`.
 4. Remove the folder with `rm -r <folder>`.
 
-It opens the report form in the browser with the versions and the draft filled
-in. If it stops with a line starting `omaworks:`, tell the user what it says. If
-it says some text was too long for the link, tell the user to paste it.
+It prints the draft, cleaned again, under the headings What happens and Error
+lines, and opens the report form in the browser with only the versions filled
+in. GitHub locks any field the link fills in, so the draft is not in the link:
+the user pastes it, and can then change any word. If it stops with a line
+starting `omaworks:`, tell the user what it says.
 
-Then stop. Tell the user to check the form, pick the Result, and press Submit
-if they agree. Don't do anything more.
+Then stop. Tell the user to paste What happens and any Error lines from the
+terminal into the form, change anything they want, pick the Result and press
+Submit if they agree. Don't do anything more.

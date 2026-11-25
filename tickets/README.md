@@ -51,3 +51,4 @@ of truth; each ticket links the sections it builds. Things left for later are in
 | # | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
 | 010 | [Installing the shortcut](010-installing.md) | 006, 007 | done |
+| 011 | [Free text is pasted, not linked](011-free-text-pasted.md) | 006, 007 | in progress |

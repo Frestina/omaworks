@@ -27,27 +27,25 @@ def _clean(value):
     return value.strip() if value else ""
 
 
-def build_report_link(plugin, omarchy=None, commit=None, what=None, errors=None):
+def build_report_link(plugin, omarchy=None, commit=None):
     """Return the report-form link.
+
+    Only the fixed fields go in it: the plugin, the Omarchy version and the
+    plugin's commit, and the title. GitHub locks every field a link fills in,
+    so What happens and Error lines never go in it. The reporter pastes them.
+    See SPEC.md, "Only the fixed fields go in the link".
 
     Only plugin is required. The other fields are left out when empty. Every
     value is stripped of surrounding whitespace. The result is not in the link:
     GitHub does not prefill a dropdown. The title is "<plugin> on <omarchy>",
     or just the plugin without a version.
     """
-    plugin, omarchy, commit, what, errors = (
-        _clean(v) for v in (plugin, omarchy, commit, what, errors)
-    )
+    plugin, omarchy, commit = (_clean(v) for v in (plugin, omarchy, commit))
     if not plugin:
         raise LinkError("plugin is required")
     title = f"{plugin} on {omarchy}" if omarchy else plugin
     params = [("template", TEMPLATE), ("title", title), ("plugin", plugin)]
-    for name, value in (
-        ("omarchy", omarchy),
-        ("commit", commit),
-        ("what", what),
-        ("errors", errors),
-    ):
+    for name, value in (("omarchy", omarchy), ("commit", commit)):
         if value:
             params.append((name, value))
     query = "&".join(f"{k}={quote(v, safe='')}" for k, v in params)
