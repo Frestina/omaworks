@@ -379,7 +379,7 @@ Checked on 2026-11-25:
   issue docs say URL parameters can "fill custom text fields" in issue forms. So
   the text fields (plugin, versions, commit, what happens) can be prefilled. The docs
   say nothing about dropdowns or checkboxes, or about `template=report.yml`
-  selecting a form. The first ticket tests both on the real repo. If a dropdown
+  selecting a form. Ticket 002 tests both on the real repo. If a dropdown
   can't be prefilled, the reporter picks the result, which they do anyway.
 - **The shell's log.** The shell logs to the user journal as `omarchy-shell`. A
   third-party plugin's warnings name its file, such as
