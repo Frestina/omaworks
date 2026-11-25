@@ -320,7 +320,7 @@ An empty site gives nobody a reason to add the first report, so it starts with w
 is already known.
 
 - **From Omarchy's issue tracker.** Issues that name a broken plugin and an exact
-  version, such as omacom/omarchy #10888, #10929, #10992 and #17794, become reports.
+  version, such as omacom/omarchy #10888, #10992, #11932 and #17794, become reports.
   The owner files them from the Frestina account with a `from-issue` label and a link
   to the issue. The page shows them as "from Omarchy issue #N".
 - **They count once per source issue**, not once per account, since one account
@@ -341,6 +341,41 @@ is already known.
 
 The 4.0.3 breaks are mostly history now. The 4.5.0 ones are the useful part, and
 together they show visitors how the site works.
+
+The details, decided in ticket 009 (2026-11-25), for the list in
+[009-seeding-list.md](tickets/009-seeding-list.md):
+
+- **Comments count as the issue.** A comment that names a plugin, an exact version
+  and what happens gives a report like the issue text does, with the issue's own
+  link. Several comments on one plugin and version give one report, since only one
+  would count.
+- **The version as the issue names it**, in a form the check accepts, such as
+  `4.0.3-1` or `4.0.3`. A report from an edge build (`omarchy-dev`, such as
+  `4.0.0.r2083.gd504061-1`) is left out, since development builds fail the check.
+  So #10929 is left out: it was found on an edge build.
+- **The release's date is its tag's**: the tagger date of an annotated tag, or the
+  commit date of a lightweight one, not when the GitHub release was published.
+  "Newest commit before the release" is the newest commit on the plugin's default
+  branch before that time.
+- **A plugin version without a commit.** When the issue names a plugin version
+  but no commit, the rule above still picks the commit, and that commit's
+  manifest must show the version the issue names. If it doesn't, the report is
+  left out. On 2026-11-25 every one matched.
+- **The result** is Broken when the issue says the plugin broke, or that what it is
+  for stopped working. It is Works with problems when the plugin still runs but
+  something is wrong, such as lost settings or a smaller widget. The list says
+  which words in the issue decided, and the owner can change any of them.
+- **A later fix changes nothing.** A seeded report is about the version the issue
+  names. A fix in a later Omarchy release or plugin commit adds no Works report,
+  since nobody ran it and said so.
+- **What goes in the line.** Plain words about what happens, with no names of
+  people, no mentions, no `#N` references and no links but the source link. Error
+  lines are left empty: the source issue holds them, and journal lines can carry
+  someone's paths.
+- **The body.** The title is `<plugin> on <version>`, as the form link makes it.
+  "What happens" is the line, a blank line, then `Source: ` and the source link.
+- **Filing shows on the source issue.** Each report's link puts "mentioned this
+  issue" in the Omarchy issue's timeline, with the Frestina account's name.
 
 ### Moderation
 
