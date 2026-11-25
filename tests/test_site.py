@@ -257,15 +257,17 @@ class ReportButtonTest(Demo):
         self.assertEqual(self.button("plugins/example.old-dial/index.html"), [])
         self.assertIn("no longer in the marketplace catalog", self.files["plugins/example.old-dial/index.html"])
 
-    def test_the_hint_names_the_command_and_links_the_install_lines(self):
-        for path in ("plugins/example.sky-clock/index.html",
-                     "repos/example-dev/weather-strip/index.html"):
-            page = self.page(path)
-            links = [a["href"] for t, a in page.tags if t == "a"]
-            self.assertIn("https://github.com/Frestina/omaworks#install", links)
-            self.assertIn("omaworks report &lt;id&gt;", self.files[path])
-        # No report button, no hint.
-        self.assertNotIn("#install", self.files["plugins/example.old-dial/index.html"])
+    def test_the_hint_names_the_command_with_the_plugins_id(self):
+        path = "plugins/example.sky-clock/index.html"
+        links = [a["href"] for t, a in self.page(path).tags if t == "a"]
+        self.assertIn("https://github.com/Frestina/omaworks#install", links)
+        self.assertIn("<code>omaworks report example.sky-clock</code>", self.files[path])
+
+    def test_a_repo_page_and_an_old_id_have_no_command_and_no_install_link(self):
+        for path in ("repos/example-dev/weather-strip/index.html",
+                     "plugins/example.old-dial/index.html"):
+            self.assertNotIn("#install", self.files[path])
+            self.assertNotIn("omaworks report", self.files[path])
 
     def test_front_page_links_the_empty_form(self):
         self.assertIn(html.escape(build_form_link()), self.files["index.html"])

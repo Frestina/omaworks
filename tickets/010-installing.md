@@ -39,6 +39,9 @@ report from any folder without knowing where the repo lives.
 - Tried once: the README's lines run with `HOME` set to a temporary folder,
   cloning this local checkout instead of GitHub, then `omaworks report --no-open`
   on a fictional plugin folder. Recorded in this ticket. Never in the real `$HOME`.
+- Review follow-ups: the hint names the command only on a catalog plugin's page,
+  with that plugin's ID filled in, since the shortcut can't report a plugin
+  outside the marketplace.
 
 ## Not in this ticket
 
@@ -56,6 +59,8 @@ report from any folder without knowing where the repo lives.
       folder instead of its real path.
 - [x] The README's lines worked in a temporary `HOME`, recorded here.
 - [x] `tests/run` passes.
+- [x] A catalog plugin's hint reads `omaworks report <its id>`, ready to copy, and
+      a page under `repos/` has no command and no install link, with tests.
 
 ## Tried once
 

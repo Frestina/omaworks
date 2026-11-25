@@ -365,13 +365,17 @@ class Site:
             out.append(
                 f'<p><a class="button" href="{e(link)}">Report how it works for you</a></p>'
             )
-            out.append(
+            hint = (
                 '<p class="hint">The form asks for your Omarchy version '
                 "(<code>omarchy version</code> prints it) and the plugin's commit "
-                "(<code>git rev-parse --short HEAD</code> in the plugin's folder). "
-                "<code>omaworks report &lt;id&gt;</code> fills in both. "
-                f'<a href="{INSTALL_URL}">How to install it</a>.</p>'
+                "(<code>git rev-parse --short HEAD</code> in the plugin's folder)."
             )
+            if plugin.group == "plugins":
+                hint += (
+                    f" <code>omaworks report {e(plugin.key)}</code> fills in both. "
+                    f'<a href="{INSTALL_URL}">How to install it</a>.'
+                )
+            out.append(hint + "</p>")
         else:
             out.append(
                 '<p class="note">This ID is no longer in the marketplace catalog, '

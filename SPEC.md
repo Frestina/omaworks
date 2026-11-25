@@ -709,8 +709,11 @@ ln -s ~/.local/share/omaworks/bin/omaworks ~/.local/bin/omaworks
   overwritten. The reporter sees the error and decides.
 - The clone holds only what the repo holds. `AGENTS.md` and `CLAUDE.md` are
   git-ignored here, and the agent starts in the current folder anyway.
-- The website's hint next to the Report button names the command and links to the
-  README's lines, so a reporter who arrives at a plugin's page finds it.
+- On a catalog plugin's page, the hint next to the Report button gives the
+  command with that plugin's ID, ready to copy, and links to the README's lines,
+  so a reporter who arrives there finds it. A page under `repos/` doesn't name the
+  command, since the shortcut takes only an ID and the check fails a folder name
+  the catalog doesn't list.
 
 ### The agent option
 
