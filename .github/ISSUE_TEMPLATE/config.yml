@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/Frestina/omaworks/discussions
+    about: For anything that is not a report on one plugin and one Omarchy version.

@@ -1,0 +1,58 @@
+name: Report
+description: Tell us whether a plugin works on your Omarchy version.
+title: "[report] "
+labels: ["report"]
+body:
+  - type: input
+    id: plugin
+    attributes:
+      label: Plugin
+      description: The plugin ID, as in the catalog.
+      placeholder: example.sky-clock
+    validations:
+      required: true
+  - type: input
+    id: omarchy
+    attributes:
+      label: Omarchy version
+      description: The output of `omarchy version`.
+      placeholder: 4.5.0-3
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Plugin commit
+      description: The output of `git rev-parse --short HEAD` in the plugin's folder.
+      placeholder: 3f2a91c
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Works
+        - Works with problems
+        - Broken
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens
+      description: What you see, in a sentence or two.
+      placeholder: The clock disappears from the bar after updating.
+    validations:
+      required: true
+  - type: textarea
+    id: errors
+    attributes:
+      label: Error lines
+      description: Optional. Lines from the shell log that name the plugin. Remove anything personal first.
+      render: text
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: Your report is public and released as CC0 (public domain).

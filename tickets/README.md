@@ -27,7 +27,7 @@ of truth; each ticket links the sections it builds. Things left for later are in
 | # | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
 | 001 | [Project skeleton](001-project-skeleton.md) | | done |
-| 002 | [The report form](002-report-form.md) | 001 | todo |
+| 002 | [The report form](002-report-form.md) | 001 | in progress |
 | 003 | [Checking reports](003-checking-reports.md) | 002 | todo |
 | 004 | [Counting and reports.json](004-counting.md) | 003 | todo |
 

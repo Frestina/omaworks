@@ -381,6 +381,12 @@ Checked on 2026-11-25:
   say nothing about dropdowns or checkboxes, or about `template=report.yml`
   selecting a form. Ticket 002 tests both on the real repo. If a dropdown
   can't be prefilled, the reporter picks the result, which they do anyway.
+- **Link length.** GitHub's docs say a URL over the server limit returns `414 URI
+  Too Long` and give no number. `omaworks/link.py` refuses a link longer than 6000
+  characters (`MAX_LINK_LENGTH`), counted after encoding. The number is a
+  conservative guess: 8192 bytes is a common server limit for a request line, and
+  6000 leaves room. Ticket 002 does not test the real limit. A longer link means
+  the caller drops the error lines and tells the user to paste them.
 - **The shell's log.** The shell logs to the user journal as `omarchy-shell`. A
   third-party plugin's warnings name its file, such as
   `qs:///home/<user>/.config/omarchy/plugins/<id>/Panel.qml:730:17: …`, with ANSI
