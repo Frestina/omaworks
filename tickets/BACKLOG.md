@@ -51,3 +51,8 @@ Work that waits, and why.
   then indented lines that don't name the file, such as a list of properties.
   `--logs` takes only the line that names the plugin's file. Taking the lines
   that follow would need care not to take another plugin's.
+- **Installed plugins outside the marketplace.** The shortcut puts the plugin's
+  folder name in the Plugin field. For a plugin the catalog doesn't list, the
+  check fails it, since such a plugin is reported by repo URL. The shortcut has
+  no network to ask the catalog, but it could offer the checkout's `origin` URL.
+  Waits until someone reports one this way.
