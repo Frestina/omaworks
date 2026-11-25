@@ -36,5 +36,5 @@ version and why, and report in one click.
 ## Done when
 
 - [ ] The three kinds of page work on the live site with test data.
-- [ ] No plugin without reports is shown as working.
-- [ ] Every status links to its reports.
+- [x] No plugin without reports is shown as working.
+- [x] Every status links to its reports.

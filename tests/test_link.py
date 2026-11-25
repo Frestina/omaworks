@@ -2,7 +2,7 @@ import unittest
 from urllib.parse import parse_qs, urlsplit
 
 from omaworks import link
-from omaworks.link import LinkError, LinkTooLong, build_report_link
+from omaworks.link import LinkError, LinkTooLong, build_form_link, build_report_link
 
 REQUIRED = dict(plugin="example.sky-clock", omarchy="4.5.0-3", commit="3f2a91c")
 
@@ -116,6 +116,13 @@ class BuildReportLinkTest(unittest.TestCase):
             **REQUIRED, errors="x" * (link.MAX_LINK_LENGTH - base + 1)
         )
         self.assertEqual(len(url), link.MAX_LINK_LENGTH)
+
+
+class BuildFormLinkTest(unittest.TestCase):
+    def test_the_form_with_nothing_filled_in(self):
+        url = build_form_link()
+        self.assertTrue(url.startswith(link.BASE_URL + "?"))
+        self.assertEqual(query(url), {"template": ["report.yml"]})
 
 
 if __name__ == "__main__":

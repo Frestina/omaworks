@@ -299,7 +299,8 @@ and some report on an older commit says Broken, including a reporter's own repor
 that their newer one replaced. It holds the newest commit as its reports spell it,
 the shortest spelling if they differ.
 
-**When it runs.** `.github/workflows/build.yml` builds and publishes the file:
+**When it runs.** `.github/workflows/build.yml` builds and publishes the file,
+with the website (see [The website](#the-website)):
 
 - on `issues` opened, edited, closed, reopened, labeled, unlabeled or deleted,
   when the issue has, or just lost, the `report` label;
@@ -474,6 +475,76 @@ A static site on GitHub Pages, built by the same Action. It has:
   button that opens the issue form with the plugin filled in;
 - a page per Omarchy version listing the plugins reported broken on it.
 
+The details, decided in ticket 005 (2026-11-25), built in `omaworks/site.py` with
+the page shell, stylesheet and search script in `site/`:
+
+**Built, not fetched.** `build.yml` runs `python3 -m omaworks.build _site`. It
+writes `reports.json` and every page as static HTML into `_site`, then deploys it.
+So the rules about what a page may say are Python, tested with `unittest`, and
+the pages work without JavaScript. Only the search needs it.
+
+**The catalog stays on the server.** The catalog is 18 MB, too much for a phone
+to fetch for a search. The build fetches it once and writes `catalog-index.json`:
+each plugin's ID, name, author and the Omarchy versions it has reports on. On
+2026-11-25 that was 423 KB, or 136 KB as sent gzipped. The search reads only
+this file. It makes no other request, and no page makes any. A
+Content-Security-Policy on every page allows nothing else.
+
+**The pages.**
+
+| Page | Path | What |
+| --- | --- | --- |
+| Front page | `/` | the search, the Omarchy versions with reports, the counting rule |
+| A catalog plugin | `plugins/<id>/` | one for every catalog ID, reported or not |
+| A plugin outside the marketplace | `repos/<owner>/<repo>/` | one for every repo in `reports.json`, marked "not in the marketplace" |
+| An Omarchy version | `versions/<release>/` | one for every release with reports |
+
+On 2026-11-25 that was 7060 files and 17 MB. A repo name that starts with a dot
+gets `~` instead in its path, since Pages leaves out such folders and no repo name
+has a `~`. A key in `reports.json` that isn't plain (letters, digits, `.`, `_`,
+`-`) gets no page, and the build log names it. No catalog ID was like that on
+2026-11-25.
+
+**A plugin's page.** A row for every Omarchy version that has any report, newest
+first. Each row shows the status, the counts beside it ("3 broken, 1 works", or
+"1 report"), the reports that count, and the ones that don't in a fold, with why.
+Each report links to its issue, to its commit in the plugin's repo, and to its
+Omarchy issue when seeded. A version the plugin has no reports on is its own row,
+"No reports yet". A plugin with no reports at all says so in one box, and that
+this doesn't mean it works. The counting rule is shown above the rows and at the
+foot of every page.
+
+**The Report button** opens `omaworks/link.py`'s link with only the plugin filled
+in: the ID, or the repo's URL for a plugin outside the marketplace. The site
+doesn't know the reporter's versions, so it says how to find them. An ID that has
+left the catalog keeps its page and reports but has no button, since a new
+report on it fails the check.
+
+**A version's page** lists the plugins whose status there is Broken, then Mixed
+reports, then Works with problems, each with its counts and its counted reports'
+links. It says that a plugin missing from the lists is reported working or has
+no reports yet.
+
+**The search** matches the ID, name and author, and a pasted GitHub URL finds a
+repo outside the marketplace. A result shows "No reports yet", or the versions it
+has reports on. It shows no status, so a status is only ever shown next to its
+reports.
+
+**Safety.** Names and authors come from the catalog, which is someone else's
+text. They are cut to one line of 100 characters and escaped, and the search
+puts them in the page as text, never as HTML. Every value from `reports.json` is
+checked against its pattern again before it goes into a page or a link. If one
+doesn't fit, the build stops and the old site stays published.
+
+**Looks.** Light and dark follow the system. One column, 16 px side margins,
+long IDs wrap, so it fits a phone. A status is always a word, never only a
+colour, and "No reports yet" has a dashed outline so it never looks like a
+result.
+
+To look at the site on this machine with made-up reports:
+`python3 -m tests.demo_site <folder>`, then
+`python3 -m http.server --directory <folder>`.
+
 ### The shortcut
 
 `omaworks report <plugin>` reads the Omarchy version and the plugin's commit, builds
@@ -542,7 +613,7 @@ Other places should show the status, in this order:
 | `skills/report/SKILL.md` | the agent's method for writing a report |
 | `skills/moderate/SKILL.md` | the agent's method for looking at new reports |
 | `CONTRIBUTING.md` | what gets closed, and how to report |
-| `site/` | the website's source |
+| `site/` | the website's page shell, stylesheet and search script; `omaworks/site.py` writes the pages |
 | `tests/` | tests for the checker, the counting and the shortcut |
 
 ## Neighbours

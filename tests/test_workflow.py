@@ -117,7 +117,7 @@ class BuildWorkflowTest(unittest.TestCase):
         self.assertIn("concurrency:\n  group: build-pages\n  cancel-in-progress: false", self.text)
 
     def test_builds_and_deploys_the_file(self):
-        self.assertIn("- run: python3 -m omaworks.build _site/reports.json", self.text)
+        self.assertRegex(self.text, r"(?m)^      - run: python3 -m omaworks\.build _site$")
         self.assertIn("path: _site", self.text)
         self.assertIn("needs: build", job(self.text, "deploy"))
         self.assertIn("name: github-pages", job(self.text, "deploy"))

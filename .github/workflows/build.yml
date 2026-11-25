@@ -1,9 +1,9 @@
 name: Build
 
-# Counts every open report and publishes reports.json to GitHub Pages. See
-# SPEC.md, "Counting" and "reports.json". The report's text is untrusted. It is
-# never put into this file through an expression: the Python code lists the
-# issues itself through the REST API.
+# Counts every open report and publishes reports.json and the website to GitHub
+# Pages. See SPEC.md, "Counting", "reports.json" and "The website". The report's
+# text is untrusted. It is never put into this file through an expression: the
+# Python code lists the issues itself through the REST API.
 
 on:
   issues:
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-      - run: python3 -m omaworks.build _site/reports.json
+      - run: python3 -m omaworks.build _site
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-pages-artifact@v5

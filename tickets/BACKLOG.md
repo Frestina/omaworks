@@ -30,3 +30,13 @@ Work that waits, and why.
   allows 1000 requests an hour. A commit's date never changes, so they could be
   kept between builds. Waits until a build comes near the limit. See
   [Counting](../SPEC.md#counting).
+- **A 404 page.** A link to a plugin page that doesn't exist, such as an ID never
+  in the catalog, gets GitHub's own 404. Ours could point to the search. Its links
+  would need the site's full path, since it is served at any depth. See
+  [The website](../SPEC.md#the-website).
+- **Working plugins on a version's page.** It lists Broken, Mixed reports and
+  Works with problems. A list of plugins reported working there could help people
+  about to update. Waits until there are enough reports to make it worth reading.
+- **Fewer pages per build.** Every build writes a page for each of the catalog's
+  7054 plugins, 17 MB in all. If deploys get slow, plugins without reports could
+  share one page that the search links to. See [The website](../SPEC.md#the-website).

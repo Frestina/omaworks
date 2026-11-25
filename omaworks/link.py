@@ -18,6 +18,11 @@ class LinkTooLong(LinkError):
     """The link is longer than GitHub accepts."""
 
 
+def build_form_link():
+    """The report form with nothing filled in."""
+    return f"{BASE_URL}?template={TEMPLATE}"
+
+
 def _clean(value):
     return value.strip() if value else ""
 

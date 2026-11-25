@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="no-referrer">
+<title>$title</title>
+<meta name="description" content="$description">
+<link rel="stylesheet" href="${root}style.css">
+<link rel="icon" href="${root}favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="top">
+<a class="brand" href="${root}">omaworks</a>
+<span class="tagline">Does this Omarchy plugin still work?</span>
+</header>
+<main>
+$main
+</main>
+<footer>
+<p class="rule">$rule</p>
+<p>Every status comes from reports by the people who use the plugin. Each report is a
+public GitHub issue in <a href="$repo_url">Frestina/omaworks</a>, released as CC0.
+Tools can read every status from <a href="${root}reports.json">reports.json</a>.</p>
+<p>Updated <time datetime="$generated">$generated_text</time>.</p>
+</footer>
+$scripts
+</body>
+</html>
