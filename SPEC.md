@@ -557,6 +557,45 @@ files since the last boot are taken, cleaned as in
 [What must never happen](#what-must-never-happen) rule 3, and shown before the form
 opens.
 
+How it decides (ticket 006):
+
+- **The plugin.** The argument must be a plugin ID, such as `example.sky-clock`,
+  and `~/.config/omarchy/plugins/<id>` must be a folder. A symlink to a folder
+  counts.
+- **The commit.** The plugin's folder must be the top of its own git checkout.
+  `omarchy plugin add` clones each plugin that way. A folder inside some other
+  checkout, such as a dotfiles repo holding `~/.config`, counts as not git, so
+  that checkout's commit is never taken. `GIT_DIR` and other `GIT_` variables are
+  not passed to git.
+- **The version.** A development build (`dev`, `dev (3ac4365)`,
+  `4.0.0.r7195.g3ac4365-1`) stops the shortcut, since the check would not count
+  the report. So does anything that isn't one release version.
+- **Stopping.** Each of these, and a missing `omarchy`, `git` or `journalctl`,
+  prints one plain line starting `omaworks:` and exits with 1. The form is not
+  opened.
+- **`--no-open`** prints the link without opening the browser.
+- **The browser.** The link is printed before `xdg-open` runs. If `xdg-open`
+  fails, the shortcut says so and the reporter opens the printed link.
+- **A plugin's lines.** A line is the plugin's when it names a path under
+  `~/.config/omarchy/plugins/<id>/`. The closing slash keeps
+  `example.sky-clock-pro` out. Every plugin in that folder gets the shell's
+  `Module path "…" is outside of the config folder.` warning, so that line is
+  left out. A line repeated in the log is shown once. No lines means the shortcut
+  says so and opens the form without them.
+- **Cleaning** is in `omaworks/clean.py`. Colour codes go. The home path becomes
+  `~`, and any other `/home/<name>` becomes `/home/<user>`. Email addresses become
+  `<email>`. The hostname becomes `<host>` and the username `<user>`, as whole
+  words in any case. The hostname comes from the kernel only, never from DNS.
+  Tokens become `<removed>`: known prefixes such as `ghp_`, values after names
+  such as `token=` or `password:`, `Bearer` values, and long runs of letters and
+  digits such as hashes. Removing too much is safe, so the rules are broad.
+- **What cleaning keeps.** The plugin's ID and the paths of files inside its
+  folder are left as they are. `omarchy plugin clone` names a clone
+  `<username>.<id>`, and the ID is in the Plugin field anyway.
+- **Too long.** When the lines make the link longer than 3500 characters, the
+  link leaves them out and the shortcut asks the reporter to paste them. They are
+  already shown above it.
+
 ### The agent option
 
 `omaworks report --agent <plugin>` starts the user's default coding agent through
@@ -608,7 +647,7 @@ Other places should show the status, in this order:
 | `.github/workflows/check-report.yml` | checks each report as it is opened or edited |
 | `.github/workflows/build.yml` | builds `reports.json` and the site |
 | `bin/omaworks` | the shortcut, in Python |
-| `omaworks/` | the shared Python module: checking, counting, building the form link |
+| `omaworks/` | the shared Python module: checking, counting, building the form link, the shortcut and its cleaning |
 | `LICENSE` | MIT, for the code |
 | `skills/report/SKILL.md` | the agent's method for writing a report |
 | `skills/moderate/SKILL.md` | the agent's method for looking at new reports |

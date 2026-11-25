@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+"""omaworks report <plugin>: see SPEC.md, "The shortcut"."""
+
+import os
+import sys
+
+# Run from the checkout, also through a symlink to this file.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from omaworks.shortcut import main  # noqa: E402
+
+sys.exit(main())

@@ -40,5 +40,5 @@ report takes about 30 seconds.
 ## Done when
 
 - [ ] The link fills in the real form with this machine's versions.
-- [ ] Cleaning has tests for each kind of personal detail.
-- [ ] Every failure case stops with a plain message, with tests.
+- [x] Cleaning has tests for each kind of personal detail.
+- [x] Every failure case stops with a plain message, with tests.

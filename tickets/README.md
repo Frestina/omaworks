@@ -36,7 +36,7 @@ of truth; each ticket links the sections it builds. Things left for later are in
 | # | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
 | 005 | [The website](005-website.md) | 004 | done |
-| 006 | [The shortcut](006-shortcut.md) | 002 | todo |
+| 006 | [The shortcut](006-shortcut.md) | 002 | in progress |
 | 007 | [The agent option](007-agent-option.md) | 006 | todo |
 
 ## M3 Running it
