@@ -21,3 +21,7 @@ Work that waits, and why.
   fails the check, since the catalog has no rename field. Accepting it would mean
   reading `renamedFrom` from every plugin's manifest. See
   [Plugins](../SPEC.md#plugins).
+- **Labels left by spam.** The check creates a `plugin:` or `repo:` label for any
+  report that passes, and a spammer can pass with any public repo URL. Closing the
+  report as `spam` leaves the label. Moderation (008) could delete Action-made
+  labels that no open report uses. Waits until spam is seen.

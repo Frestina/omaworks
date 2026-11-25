@@ -43,5 +43,5 @@ gets labels that make it easy to find.
 
 - [x] Every check in the spec has a passing and a failing test.
 - [x] A hostile body is handled as text, with a test.
-- [ ] The Action labels and comments correctly on the real repo, shown with test
+- [x] The Action labels and comments correctly on the real repo, shown with test
       issues closed as `test`.
