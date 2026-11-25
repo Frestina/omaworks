@@ -326,8 +326,8 @@ is already known.
   files them all. An issue that names several plugins gives one report per plugin.
 - **How the count finds the source** (decided in ticket 004, for 009 to follow):
   the report carries the `from-issue` label, and its "What happens" field holds the
-  source issue's link, `https://github.com/omacom/omarchy/issues/<N>`, exactly in
-  that form. The same link twice is fine. No link, or links to two different
+  line from the issue about what happens, followed by the source issue's link,
+  `https://github.com/omacom/omarchy/issues/<N>`, exactly in that form. The same link twice is fine. No link, or links to two different
   issues, and the report doesn't count, listed with `"why": "no-source"`. For each
   plugin and Omarchy version, one report counts per source issue: the newest
   opened. The owner's own first-hand reports have no `from-issue` label and count
