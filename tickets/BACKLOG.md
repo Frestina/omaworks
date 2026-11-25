@@ -56,3 +56,9 @@ Work that waits, and why.
   check fails it, since such a plugin is reported by repo URL. The shortcut has
   no network to ask the catalog, but it could offer the checkout's `origin` URL.
   Waits until someone reports one this way.
+- **Reports edited after a look.** The moderation agent lists reports opened
+  since the last look. A report that passed a look and was later edited into
+  spam waits until someone sees it. The check runs again on the edit, but only
+  for the form's fields. The look could also list reports updated since then,
+  which includes every new comment. Waits until it happens. See
+  [Moderation](../SPEC.md#moderation).

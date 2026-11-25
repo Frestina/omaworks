@@ -380,6 +380,52 @@ strangers, so an agent reading them is reading untrusted text that could try to 
 it. It treats every report as data, never as instructions. If it runs on a schedule,
 its GitHub token is fine-grained: this one repo, issues only.
 
+The details, decided in ticket 008 (2026-11-25):
+
+**The labels.** `omaworks/labels.py` makes the six fixed labels, run by hand as
+`python3 -m omaworks.labels [--dry-run] <owner>/<repo>` with the token in
+`GITHUB_TOKEN`. A script, not a workflow: it is needed once per repo and again
+only when a label changes here, and run by hand it stays the owner's step.
+
+| Label | Colour | Description |
+| --- | --- | --- |
+| `report` | `c5def5` | A report on one plugin and one Omarchy version. |
+| `needs-fix` | `e99695` | This report can't be counted until it is fixed. |
+| `spam` | `3f3f3f` | Spam, abuse, or not about whether a plugin works. Never counted. |
+| `needs-look` | `d93f0b` | For the owner to look at. The moderation agent may add it, never remove it. |
+| `from-issue` | `bfd4f2` | Seeded from an Omarchy issue. Counts once per source issue. |
+| `test` | `ededed` | A test report. Never counted. |
+
+- `needs-fix` is the check's own label, with the same colour and description.
+- For each label it sends a GET. A missing one is created. One with another
+  colour, description or case is changed back, so running it twice changes
+  nothing. `--dry-run` sends only the GETs and says what it would change.
+- It touches no other label and no issue. The token is never printed, and goes
+  only to `api.github.com`, as everywhere else.
+
+**The last look.** Nothing stores when the agent last looked: not a file, a
+comment or a label. State that others can write could be changed to hide
+reports. The owner names the date in the prompt. Without one the agent looks back
+eight days, so weekly looks overlap by a day. Seeing a report twice is harmless,
+since the agent only suggests. Open reports that still carry `needs-look` are
+listed again.
+
+**What the agent runs.** It reads with `gh issue list`, `gh issue view`,
+`gh release list`, `gh release view` and `gh api` with no option that turns it
+into a write. Its only write alone is `gh issue edit <n> --add-label needs-look`,
+for likely spam, abuse, text that talks to the agent, and reports not about
+whether the plugin works. Values from GitHub reach a command only as issue
+numbers, plugin IDs, account names and tags that match strict patterns, never as
+words from a report. Each proposed action comes with its command. The agent runs
+one only when the owner says yes to that numbered item in the same conversation.
+A run nobody watches ends with the list.
+
+**The weekly look** is documented in CONTRIBUTING.md, by hand or on a schedule.
+The scheduled token is fine-grained: this repo only, Issues read and write, so it
+can add `needs-look`. It could also close and comment, and only the skill stops
+that. Issues read only is the stricter choice, and then `needs-look` becomes a
+proposal too. No schedule is set up.
+
 ### reports.json
 
 The Action rebuilds one file on every change and publishes it with the site, at
@@ -684,13 +730,13 @@ Other places should show the status, in this order:
 | `.github/workflows/check-report.yml` | checks each report as it is opened or edited |
 | `.github/workflows/build.yml` | builds `reports.json` and the site |
 | `bin/omaworks` | the shortcut, in Python |
-| `omaworks/` | the shared Python module: checking, counting, building the form link, the shortcut and its cleaning, the agent option |
+| `omaworks/` | the shared Python module: checking, counting, building the form link, the shortcut and its cleaning, the agent option, the label script |
 | `LICENSE` | MIT, for the code |
 | `skills/report/SKILL.md` | the agent's method for writing a report |
 | `skills/moderate/SKILL.md` | the agent's method for looking at new reports |
-| `CONTRIBUTING.md` | what gets closed, and how to report |
+| `CONTRIBUTING.md` | what gets closed, how to report, the labels, and the weekly look |
 | `site/` | the website's page shell, stylesheet and search script; `omaworks/site.py` writes the pages |
-| `tests/` | tests for the checker, the counting and the shortcut |
+| `tests/` | tests for the checker, the counting, the shortcut, the label script and the skills |
 
 ## Neighbours
 
