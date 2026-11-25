@@ -158,6 +158,14 @@ class SeededTest(unittest.TestCase):
         self.assertEqual(counted(r), [1])
         self.assertEqual(r["reports"][0]["fromIssue"], 10888)
 
+    def test_source_link_in_backticks_is_found(self):
+        # Seeded reports put the link in a code span, so the Omarchy issue
+        # gets no back-link. See SPEC.md, "Seeding".
+        what = "The clock is gone.\n\nSource: `https://github.com/omacom/omarchy/issues/10888`"
+        r = row([self.seeded(1, what, result="Broken")])
+        self.assertEqual(counted(r), [1])
+        self.assertEqual(r["reports"][0]["fromIssue"], 10888)
+
     def test_source_is_read_only_from_what_happens(self):
         text = body(what="The clock is gone.", errors=source_line(10888))
         r = row([issue(1, user=9, extra=("from-issue",), text=text)])

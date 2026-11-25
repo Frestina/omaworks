@@ -328,7 +328,9 @@ is already known.
 - **How the count finds the source** (decided in ticket 004, for 009 to follow):
   the report carries the `from-issue` label, and its "What happens" field holds the
   line from the issue about what happens, followed by the source issue's link,
-  `https://github.com/omacom/omarchy/issues/<N>`, exactly in that form. The same link twice is fine. No link, or links to two different
+  `https://github.com/omacom/omarchy/issues/<N>`, exactly in that form. The count
+  reads the link the same plain or in backticks; seeded reports put it in
+  backticks (see below). The same link twice is fine. No link, or links to two different
   issues, and the report doesn't count, listed with `"why": "no-source"`. For each
   plugin and Omarchy version, one report counts per source issue: the newest
   opened. The owner's own first-hand reports have no `from-issue` label and count
@@ -373,9 +375,16 @@ The details, decided in ticket 009 (2026-11-25), for the list in
   lines are left empty: the source issue holds them, and journal lines can carry
   someone's paths.
 - **The body.** The title is `<plugin> on <version>`, as the form link makes it.
-  "What happens" is the line, a blank line, then `Source: ` and the source link.
-- **Filing shows on the source issue.** Each report's link puts "mentioned this
-  issue" in the Omarchy issue's timeline, with the Frestina account's name.
+  "What happens" is the line, a blank line, then `Source: ` and the source link
+  in backticks: ``Source: `https://github.com/omacom/omarchy/issues/<N>` ``.
+- **The link goes in backticks, so the source issue gets no back-link.** A plain
+  issue link in a report adds "Frestina mentioned this issue" to the Omarchy
+  issue's timeline. That would put 14 links to omaworks on 9 Omarchy issues
+  before there is data to show, which [Telling others](#telling-others) says to
+  wait for. Tested on this repo on 2026-11-25: #13 had the link to #12 in
+  backticks and #14 had it plain, and #12's timeline shows a cross-reference from
+  #14 only. The count reads the link the same either way. Editing a seeded report
+  to a plain link later adds the back-link then.
 
 ### Moderation
 

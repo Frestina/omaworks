@@ -37,7 +37,7 @@ Broken
 
 After updating from Omarchy 4.0.2 to 4.0.3, the plugin manager shows "0 plugins · 0 enabled". The only sign of it is one QML warning in the journal.
 
-Source: https://github.com/omacom/omarchy/issues/10888
+Source: `https://github.com/omacom/omarchy/issues/10888`
 
 ### Error lines
 
@@ -73,7 +73,7 @@ Broken
 
 After updating from Omarchy 4.0.2 to 4.0.3, the plugin's own scripts fail to start because their path is lost. Sign-in, saving the refreshed token, local playback and Connect device control all break.
 
-Source: https://github.com/omacom/omarchy/issues/10863
+Source: `https://github.com/omacom/omarchy/issues/10863`
 
 ### Error lines
 
@@ -109,7 +109,7 @@ Broken
 
 On Omarchy 4.0.3 the plugin's own scripts fail to start because their path is lost. Signing in does nothing, and a refreshed token is never saved.
 
-Source: https://github.com/omacom/omarchy/issues/10863
+Source: `https://github.com/omacom/omarchy/issues/10863`
 
 ### Error lines
 
@@ -145,7 +145,7 @@ Works with problems
 
 On Omarchy 4.0.3 the plugin can't read its saved settings, so it always connects to 127.0.0.1 whatever host and port are set. No error is shown.
 
-Source: https://github.com/omacom/omarchy/issues/10863
+Source: `https://github.com/omacom/omarchy/issues/10863`
 
 ### Error lines
 
@@ -181,7 +181,7 @@ Works with problems
 
 On Omarchy 4.0.3 every setting comes up at its default, and changing one setting deletes all the other saved ones.
 
-Source: https://github.com/omacom/omarchy/issues/10907
+Source: `https://github.com/omacom/omarchy/issues/10907`
 
 ### Error lines
 
@@ -217,7 +217,7 @@ Works with problems
 
 On Omarchy 4.0.3 turning the hot corner off never takes effect, and the first settings change after the update deleted the saved hot-corner setting.
 
-Source: https://github.com/omacom/omarchy/issues/10907
+Source: `https://github.com/omacom/omarchy/issues/10907`
 
 ### Error lines
 
@@ -253,7 +253,7 @@ Broken
 
 After updating from Omarchy 4.0.2 to 4.0.3, the bar widget never appears and the feed stops refreshing. Nothing is logged.
 
-Source: https://github.com/omacom/omarchy/issues/10992
+Source: `https://github.com/omacom/omarchy/issues/10992`
 
 ### Error lines
 
@@ -289,7 +289,7 @@ Broken
 
 After updating from Omarchy 4.0.2 to 4.0.3, the panel throws a TypeError ('refresh' is not a function) and "invalid context" errors on every state change.
 
-Source: https://github.com/omacom/omarchy/issues/10992
+Source: `https://github.com/omacom/omarchy/issues/10992`
 
 ### Error lines
 
@@ -325,7 +325,7 @@ Broken
 
 After updating from Omarchy 4.0.2 to 4.0.3, the plugin throws a TypeError ('refresh' is not a function) on every state change.
 
-Source: https://github.com/omacom/omarchy/issues/10992
+Source: `https://github.com/omacom/omarchy/issues/10992`
 
 ### Error lines
 
@@ -361,7 +361,7 @@ Broken
 
 After updating from Omarchy 4.0.2 to 4.0.3, the popup throws a repeating TypeError ('rebuildFocusTargets' is not a function).
 
-Source: https://github.com/omacom/omarchy/issues/10992
+Source: `https://github.com/omacom/omarchy/issues/10992`
 
 ### Error lines
 
@@ -397,7 +397,7 @@ Broken
 
 On Omarchy 4.0.3 the bar never hides. The plugin can no longer read whether a popup is open and takes the missing value as an open popup. It also can no longer see the pointer on the bar.
 
-Source: https://github.com/omacom/omarchy/issues/10996
+Source: `https://github.com/omacom/omarchy/issues/10996`
 
 ### Error lines
 
@@ -433,7 +433,7 @@ Works with problems
 
 On Omarchy 4.0.3 the bar widget can't tell how much room it has, so it always shrinks to a single glyph, whatever the bar's width. Nothing is logged.
 
-Source: https://github.com/omacom/omarchy/issues/11185
+Source: `https://github.com/omacom/omarchy/issues/11185`
 
 ### Error lines
 
@@ -469,7 +469,7 @@ Broken
 
 On Omarchy 4.0.3 dragging a widget onto the tray does nothing, so widgets can't be moved into its drawer. A widget added to the drawer by hand never shows. Nothing is logged.
 
-Source: https://github.com/omacom/omarchy/issues/11932
+Source: `https://github.com/omacom/omarchy/issues/11932`
 
 ### Error lines
 
@@ -505,7 +505,7 @@ Broken
 
 After updating from Omarchy 4.0.6 to 4.5.0, the bar widget is shrunk to about a fifth of its size, so the gauge and temperature can't be read. No error is logged.
 
-Source: https://github.com/omacom/omarchy/issues/17794
+Source: `https://github.com/omacom/omarchy/issues/17794`
 
 ### Error lines
 

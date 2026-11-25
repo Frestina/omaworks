@@ -40,6 +40,8 @@ Read again on 2026-11-25: omacom/omarchy #10888, #10863, #10907, #10929, #10992,
 in the catalog fetched that day. The exact bodies, as the form writes them, are
 in [009-seeding-list.md](009-seeding-list.md).
 
+Approved by the owner on 2026-11-25, with the source link in backticks.
+
 All 14 pass `omaworks/check.py` against that catalog and Omarchy's tags, and
 `omaworks/count.py` reads each one as a `from-issue` report that counts once for
 its source issue. Each commit was found in the plugin's repo with a GET request.
@@ -96,9 +98,9 @@ How each row's commit and result were found:
 
 ### Before filing
 
-- Filing a report puts "mentioned this issue" in the Omarchy issue's timeline,
-  because the body links it. Everyone watching those nine issues sees it, with the
-  Frestina account's name.
+- The source link is in backticks, so filing adds nothing to the Omarchy issue's
+  timeline. A plain link would add "Frestina mentioned this issue" there. Editing a
+  report to a plain link later adds it then. See [Seeding](../SPEC.md#seeding).
 - Rows 4, 5, 6 and 12 are Works with problems and rows 8 to 10 Broken, though the
   issue describes only errors for those three. The notes above say which words
   decided. The owner may change any result before filing.
@@ -107,6 +109,6 @@ How each row's commit and result were found:
 
 ## Done when
 
-- [ ] The list is in this ticket and the owner approved it.
+- [x] The list is in this ticket and the owner approved it.
 - [ ] Every seeded report links its source issue and passed the checks.
 - [ ] The site shows them as "from Omarchy issue #N".
