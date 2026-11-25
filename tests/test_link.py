@@ -19,6 +19,7 @@ class BuildReportLinkTest(unittest.TestCase):
             query(url),
             {
                 "template": ["report.yml"],
+                "title": ["example.sky-clock on 4.5.0-3"],
                 "plugin": ["example.sky-clock"],
                 "omarchy": ["4.5.0-3"],
                 "commit": ["3f2a91c"],
@@ -51,30 +52,54 @@ class BuildReportLinkTest(unittest.TestCase):
         self.assertTrue(url.isascii())
 
     def test_optional_fields_left_out_when_missing_or_empty(self):
-        url = build_report_link(**REQUIRED, result="", what=None, errors="  ")
-        self.assertEqual(
-            set(query(url)), {"template", "plugin", "omarchy", "commit"}
-        )
+        url = build_report_link("example.sky-clock", "", None, what=None, errors="  ")
+        self.assertEqual(set(query(url)), {"template", "title", "plugin"})
 
     def test_optional_fields_included_when_given(self):
-        url = build_report_link(
-            **REQUIRED, result="Works with problems", what="w", errors="e"
-        )
+        url = build_report_link(**REQUIRED, what="w", errors="e")
         q = query(url)
-        self.assertEqual(q["result"], ["Works with problems"])
         self.assertEqual(q["what"], ["w"])
         self.assertEqual(q["errors"], ["e"])
 
-    def test_unknown_result_refused(self):
-        with self.assertRaises(LinkError):
-            build_report_link(**REQUIRED, result="Fine")
+    def test_no_result_in_link(self):
+        self.assertNotIn("result", query(build_report_link(**REQUIRED)))
+        with self.assertRaises(TypeError):
+            build_report_link(**REQUIRED, result="Works")
 
-    def test_required_fields_refused_when_empty(self):
-        for name in REQUIRED:
-            with self.subTest(name=name):
-                args = dict(REQUIRED, **{name: " "})
+    def test_title_with_version(self):
+        self.assertEqual(
+            query(build_report_link(**REQUIRED))["title"],
+            ["example.sky-clock on 4.5.0-3"],
+        )
+
+    def test_title_without_version(self):
+        self.assertEqual(
+            query(build_report_link("example.sky-clock"))["title"],
+            ["example.sky-clock"],
+        )
+
+    def test_plugin_only_link(self):
+        q = query(build_report_link("example.sky-clock"))
+        self.assertEqual(set(q), {"template", "title", "plugin"})
+
+    def test_plugin_required(self):
+        for value in ("", "  ", None):
+            with self.subTest(value=value):
                 with self.assertRaises(LinkError):
-                    build_report_link(**args)
+                    build_report_link(value, "4.5.0-3", "3f2a91c")
+
+    def test_values_stripped(self):
+        url = build_report_link(
+            " example.sky-clock ", "4.5.0-3\n", "3f2a91c\n", what="\nw\n", errors=" a\nb\n"
+        )
+        q = query(url)
+        self.assertEqual(q["plugin"], ["example.sky-clock"])
+        self.assertEqual(q["omarchy"], ["4.5.0-3"])
+        self.assertEqual(q["commit"], ["3f2a91c"])
+        self.assertEqual(q["what"], ["w"])
+        self.assertEqual(q["errors"], ["a\nb"])
+        self.assertEqual(q["title"], ["example.sky-clock on 4.5.0-3"])
+        self.assertNotIn("%0A", url.split("what=")[0])
 
     def test_too_long_link_refused(self):
         with self.assertRaises(LinkTooLong):

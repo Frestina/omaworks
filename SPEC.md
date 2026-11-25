@@ -100,6 +100,10 @@ One report is one GitHub issue, made from the issue form. Its fields:
 The form ends with one line: "Your report is public and released as CC0 (public
 domain)." That lets any tool reuse `reports.json`.
 
+The issue form is the only way to open an issue. Blank issues are for maintainers
+only. Questions and ideas go to the repo's GitHub Discussions, linked from the
+form chooser, so the issues hold only reports.
+
 On this machine `omarchy version` printed `4.5.0-3`, while
 `/usr/share/omarchy/version` still said `4.0.0.alpha`, so the command is the source.
 Plugins in `~/.config/omarchy/plugins/` are git checkouts, so the commit is
@@ -369,24 +373,28 @@ Decided:
    any tool can reuse `reports.json` (2026-11-25).
 8. **Telling the marketplace.** Later, in steps (2026-11-25). See
    [Telling others](#telling-others).
+9. **Questions.** They go to GitHub Discussions, not issues, so the issues and the
+   counts hold only reports (2026-11-25).
 
 No decisions are open.
 
 Checked on 2026-11-25:
 
-- **Prefilling the form.** GitHub's form schema says a field's `id` "is the
-  canonical identifier for the field in URL query parameter prefills", and the
-  issue docs say URL parameters can "fill custom text fields" in issue forms. So
-  the text fields (plugin, versions, commit, what happens) can be prefilled. The docs
-  say nothing about dropdowns or checkboxes, or about `template=report.yml`
-  selecting a form. Ticket 002 tests both on the real repo. If a dropdown
-  can't be prefilled, the reporter picks the result, which they do anyway.
-- **Link length.** GitHub's docs say a URL over the server limit returns `414 URI
-  Too Long` and give no number. `omaworks/link.py` refuses a link longer than 6000
-  characters (`MAX_LINK_LENGTH`), counted after encoding. The number is a
-  conservative guess: 8192 bytes is a common server limit for a request line, and
-  6000 leaves room. Ticket 002 does not test the real limit. A longer link means
-  the caller drops the error lines and tells the user to paste them.
+- **Prefilling the form.** Checked on the real repo, signed in, with ticket 002's
+  form. `template=report.yml` selects the form and adds the `report` label. The
+  text fields `plugin`, `omarchy`, `commit`, `what` and `errors` fill in, with
+  `&`, `#`, newlines and non-ASCII intact. `title` fills the issue title and
+  replaces the form's `[report] ` prefix. The `result` dropdown does not fill in,
+  by option text (`Works with problems`, `Broken`) or by number, so the link leaves
+  it out and the reporter picks the result, which they do anyway.
+- **Link length.** A reporter who isn't signed in to GitHub is sent through
+  `github.com/login?return_to=<the link>`, which encodes the link again. Measured
+  with links where every character of the text is escaped, the worst case: a
+  3973-character link reached the login page, a 4273-character one gave a server
+  error, and from about 6000 the login drops the link. Signed-in links work up to
+  about 8000. So `omaworks/link.py` refuses links over 3500 characters, counted
+  after encoding. A longer link means the caller drops the error lines and tells
+  the user to paste them.
 - **The shell's log.** The shell logs to the user journal as `omarchy-shell`. A
   third-party plugin's warnings name its file, such as
   `qs:///home/<user>/.config/omarchy/plugins/<id>/Panel.qml:730:17: …`, with ANSI

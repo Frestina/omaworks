@@ -5,12 +5,9 @@ from urllib.parse import quote
 BASE_URL = "https://github.com/Frestina/omaworks/issues/new"
 TEMPLATE = "report.yml"
 
-# GitHub documents no number: a URL over its server limit gets "414 URI Too
-# Long". 8192 bytes is a common server limit for a request line, so stay well
-# under it. See SPEC.md, "Prefilling the form".
-MAX_LINK_LENGTH = 6000
-
-RESULTS = ("Works", "Works with problems", "Broken")
+# Longer links fail for reporters who are not signed in. See SPEC.md,
+# "Link length".
+MAX_LINK_LENGTH = 3500
 
 
 class LinkError(ValueError):
@@ -21,23 +18,32 @@ class LinkTooLong(LinkError):
     """The link is longer than GitHub accepts."""
 
 
-def build_report_link(plugin, omarchy, commit, result=None, what=None, errors=None):
+def _clean(value):
+    return value.strip() if value else ""
+
+
+def build_report_link(plugin, omarchy=None, commit=None, what=None, errors=None):
     """Return the report-form link.
 
-    plugin, omarchy and commit are required. result, what and errors are
-    optional and left out of the link when empty. result is the option text.
+    Only plugin is required. The other fields are left out when empty. Every
+    value is stripped of surrounding whitespace. The result is not in the link:
+    GitHub does not prefill a dropdown. The title is "<plugin> on <omarchy>",
+    or just the plugin without a version.
     """
-    params = [("template", TEMPLATE)]
-    for name, value in (("plugin", plugin), ("omarchy", omarchy), ("commit", commit)):
-        if not value or not value.strip():
-            raise LinkError(f"{name} is required")
-        params.append((name, value))
-    if result:
-        if result not in RESULTS:
-            raise LinkError(f"result must be one of: {', '.join(RESULTS)}")
-        params.append(("result", result))
-    for name, value in (("what", what), ("errors", errors)):
-        if value and value.strip():
+    plugin, omarchy, commit, what, errors = (
+        _clean(v) for v in (plugin, omarchy, commit, what, errors)
+    )
+    if not plugin:
+        raise LinkError("plugin is required")
+    title = f"{plugin} on {omarchy}" if omarchy else plugin
+    params = [("template", TEMPLATE), ("title", title), ("plugin", plugin)]
+    for name, value in (
+        ("omarchy", omarchy),
+        ("commit", commit),
+        ("what", what),
+        ("errors", errors),
+    ):
+        if value:
             params.append((name, value))
     query = "&".join(f"{k}={quote(v, safe='')}" for k, v in params)
     link = f"{BASE_URL}?{query}"

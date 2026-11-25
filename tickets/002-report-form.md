@@ -35,12 +35,22 @@ on this.
   "Checked" list, replacing the line about what the docs don't say. Close any test
   issue with a `test` label.
 
+- **Review follow-ups:** `link.py` leaves out the result, sets the title, needs only
+  the plugin, strips values, and refuses links over 3500 characters. See the spec's
+  "Prefilling the form" and "Link length".
+
 ## Not in this ticket
 
 - Checking submitted reports (003).
 
 ## Done when
 
-- [ ] The form renders on GitHub with every field.
-- [ ] `omaworks/link.py` builds links the real form fills in, with tests.
-- [ ] The spec records which fields a link can fill in, checked on the real repo.
+- [x] The form renders on GitHub with every field.
+- [x] `omaworks/link.py` builds links the real form fills in, with tests.
+- [x] The spec records which fields a link can fill in, checked on the real repo.
+- [x] `link.py` no longer takes `result`: the dropdown can't be prefilled.
+- [x] `link.py` sets `title` to `<plugin> on <omarchy>`, or `<plugin>` without a
+  version.
+- [x] Only `plugin` is required; `omarchy` and `commit` are optional.
+- [x] Values are stripped of surrounding whitespace before encoding.
+- [x] `MAX_LINK_LENGTH` is 3500, with its comment pointing at "Link length".
