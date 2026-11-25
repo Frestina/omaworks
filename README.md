@@ -6,8 +6,45 @@ omaworks is a public record of whether each Omarchy plugin works on each Omarchy
 version, written by the people who use it. ProtonDB does the same for Steam games
 on Linux.
 
-It is being built. [SPEC.md](SPEC.md) says what it will do, and
-[tickets/](tickets/README.md) says in what order.
+Read the results on the [website](https://frestina.github.io/omaworks/). To see
+how it is meant to work, read [SPEC.md](SPEC.md).
+
+## Install
+
+The `omaworks` command opens a report form with your Omarchy version and the
+plugin's commit already filled in. Copy these three lines:
+
+```sh
+git clone https://github.com/Frestina/omaworks ~/.local/share/omaworks
+mkdir -p ~/.local/bin
+ln -s ~/.local/share/omaworks/bin/omaworks ~/.local/bin/omaworks
+```
+
+Omarchy already has `~/.local/bin` on your PATH. If `omaworks` is already in
+there, `ln` stops with an error and changes nothing.
+
+To update:
+
+```sh
+git -C ~/.local/share/omaworks pull
+```
+
+To remove it:
+
+```sh
+rm ~/.local/bin/omaworks
+rm -rf ~/.local/share/omaworks
+```
+
+## Report
+
+- `omaworks report <plugin>` opens the form with both versions filled in.
+- `omaworks report --logs <plugin>` also puts the plugin's error lines from the
+  journal in the form.
+- `omaworks report --agent <plugin>` lets your coding agent look into the plugin
+  and fill in the form.
+
+Nothing is sent until you press Submit on GitHub.
 
 ## Limits
 

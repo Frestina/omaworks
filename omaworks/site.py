@@ -36,6 +36,7 @@ INDEX = "catalog-index.json"
 
 REPO_URL = BASE_URL.removesuffix("/issues/new")
 ISSUES_URL = f"{REPO_URL}/issues"
+INSTALL_URL = f"{REPO_URL}#install"
 OMARCHY_ISSUES_URL = "https://github.com/omacom/omarchy/issues"
 
 # The counting rule in one sentence. See SPEC.md, "Counting".
@@ -367,7 +368,9 @@ class Site:
             out.append(
                 '<p class="hint">The form asks for your Omarchy version '
                 "(<code>omarchy version</code> prints it) and the plugin's commit "
-                "(<code>git rev-parse --short HEAD</code> in the plugin's folder).</p>"
+                "(<code>git rev-parse --short HEAD</code> in the plugin's folder). "
+                "<code>omaworks report &lt;id&gt;</code> fills in both. "
+                f'<a href="{INSTALL_URL}">How to install it</a>.</p>'
             )
         else:
             out.append(

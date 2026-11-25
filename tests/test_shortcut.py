@@ -767,5 +767,45 @@ class CommandTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.opened))
 
 
+@unittest.skipUnless(GIT, "needs git")
+class SymlinkTest(unittest.TestCase):
+    """The installed command: a symlink in another folder, run directly."""
+
+    def setUp(self):
+        CommandTest.setUp(self)
+        self.link = os.path.join(self.home, ".local", "bin", "omaworks")
+        os.makedirs(os.path.dirname(self.link))
+        os.symlink(BIN, self.link)
+
+    def run_link(self, *args):
+        env = git_env(self.home)
+        env["PATH"] = os.pathsep.join([self.fakebin, os.path.dirname(GIT)])
+        env["USER"] = "mira"
+        # Executed directly, so the #! line is used too.
+        return subprocess.run(
+            [self.link, *args], capture_output=True, text=True, env=env,
+            timeout=60, cwd=self.tmp,
+        )
+
+    def test_the_symlink_prints_the_link(self):
+        folder = os.path.join(self.home, ".config", "omarchy", "plugins", PLUGIN)
+        checkout(self.home, folder)
+        done = self.run_link("report", "--no-open", PLUGIN)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        url = next(w for w in done.stdout.split() if w.startswith("http"))
+        self.assertEqual(query(url)["omarchy"], ["4.5.0-3"])
+        self.assertFalse(os.path.exists(self.opened))
+
+    def test_agent_through_the_symlink_names_the_real_paths(self):
+        os.makedirs(os.path.join(self.home, ".config", "omarchy", "plugins", PLUGIN))
+        done = self.run_link("report", "--agent", PLUGIN)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        with open(self.started) as f:
+            [prompt] = f.read().split("\0")[:-1]
+        self.assertIn(os.path.join(ROOT, "skills", "report", "SKILL.md"), prompt)
+        self.assertIn(BIN, prompt)
+        self.assertNotIn(os.path.dirname(self.link), prompt)
+
+
 if __name__ == "__main__":
     unittest.main()

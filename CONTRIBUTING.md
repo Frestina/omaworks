@@ -8,8 +8,8 @@ is made of reports by the people who use the plugins.
 - One report is one issue, made with the Report form. Open it from
   [New issue](https://github.com/Frestina/omaworks/issues/new/choose), from a
   plugin's page on the [website](https://frestina.github.io/omaworks/), or with
-  `bin/omaworks report <plugin>` from a clone of this repo, which fills in the
-  versions for you.
+  `omaworks report <plugin>`, which fills in the versions for you. The README
+  shows how to [install it](README.md#install).
 - One report covers one plugin on one Omarchy version.
 - **Plugin** is the plugin's ID from the marketplace, such as `example.sky-clock`.
   For a plugin that isn't in the marketplace, use its GitHub repo URL.

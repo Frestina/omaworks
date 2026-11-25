@@ -40,10 +40,6 @@ Work that waits, and why.
 - **Fewer pages per build.** Every build writes a page for each of the catalog's
   7054 plugins, 17 MB in all. If deploys get slow, plugins without reports could
   share one page that the search links to. See [The website](../SPEC.md#the-website).
-- **Installing the shortcut.** `bin/omaworks` runs from a clone of this repo. How
-  a reporter gets `omaworks` on their PATH, and what the README tells them, is not
-  decided: an AUR package, a plugin, or a line to copy. See
-  [The shortcut](../SPEC.md#the-shortcut).
 - **Local changes in a plugin's checkout.** The shortcut reports `HEAD`, but a
   checkout with local edits is not running that commit. It could warn, or add a
   note to the draft. Waits until a report shows the need.

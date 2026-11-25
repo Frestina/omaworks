@@ -689,6 +689,29 @@ How it decides (ticket 006):
   link leaves them out and the shortcut asks the reporter to paste them. They are
   already shown above it.
 
+**Installing** (decided 2026-11-25, for ticket 010). A reporter clones the repo and
+links the command into `~/.local/bin`. The README gives the lines to copy:
+
+```sh
+git clone https://github.com/Frestina/omaworks ~/.local/share/omaworks
+mkdir -p ~/.local/bin
+ln -s ~/.local/share/omaworks/bin/omaworks ~/.local/bin/omaworks
+```
+
+- **Why this way.** Omarchy puts `~/.local/bin` on the PATH
+  (`/usr/share/omarchy/default/bash/env-bootstrap`). `bin/omaworks` finds its
+  module through the symlink, and `--agent` names the skill and the command by
+  their real paths in the clone. So nothing needs packaging, no release has to be
+  cut, and there is no new account to keep.
+- **Updating** is `git -C ~/.local/share/omaworks pull`. **Removing** is deleting
+  the link and the folder. The README gives both lines.
+- `ln -s` without `-f`, so an `omaworks` already in `~/.local/bin` is never
+  overwritten. The reporter sees the error and decides.
+- The clone holds only what the repo holds. `AGENTS.md` and `CLAUDE.md` are
+  git-ignored here, and the agent starts in the current folder anyway.
+- The website's hint next to the Report button names the command and links to the
+  README's lines, so a reporter who arrives at a plugin's page finds it.
+
 ### The agent option
 
 `omaworks report --agent <plugin>` starts the user's default coding agent through
@@ -802,6 +825,11 @@ Other places should show the status, in this order:
   plugin's features aren't what this records.
 - **The agent posting reports.** A report is public and carries the reporter's
   GitHub name, so the reporter always presses Submit.
+- **An AUR package, for now.** It needs versioned releases, upkeep every release
+  and a new public account. A clone and a link do the same job. Revisit when people
+  ask for it. See [The shortcut](#the-shortcut).
+- **A plugin to install the command.** Omarchy plugins are shell UI. A bar button
+  that opens the shortcut stays in the backlog, and it would use this install.
 
 ## Open questions
 

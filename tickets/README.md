@@ -45,3 +45,9 @@ of truth; each ticket links the sections it builds. Things left for later are in
 | --- | --- | --- | --- |
 | 008 | [Moderation](008-moderation.md) | 003 | done |
 | 009 | [Seeding](009-seeding.md) | 004, 008 | done |
+
+## M4 Getting it to people
+
+| # | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| 010 | [Installing the shortcut](010-installing.md) | 006, 007 | done |
