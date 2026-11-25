@@ -32,6 +32,8 @@ report takes about 30 seconds.
   shown before the browser opens.
 - `omaworks/clean.py` for the cleaning, with tests on fictional log lines.
 - No network access and no GitHub token.
+- Review follow-ups: GitHub's push protection rejects the token-like test
+  values as real secrets, so no fixture holds a whole token as one literal.
 
 ## Not in this ticket
 
@@ -42,3 +44,5 @@ report takes about 30 seconds.
 - [x] The link fills in the real form with this machine's versions.
 - [x] Cleaning has tests for each kind of personal detail.
 - [x] Every failure case stops with a plain message, with tests.
+- [x] No commit holds a literal that GitHub's push protection takes for a secret,
+      and `main` pushes.
