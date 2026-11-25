@@ -44,6 +44,10 @@ link and the shortcut prints it for the reporter to paste.
 - Tried once in the browser by the reviewer, not by you: the link from
   `omaworks report --no-open` on a fictional plugin opens a form where only the
   fixed fields are filled, and pasted text can be deleted. Leave a box for it.
+- Review follow-ups: with `--agent`, the printed draft lands in the agent's
+  tool output, which many agents fold away. The skill has the agent show the
+  cleaned text from the command's output in its last message, one code block per
+  field, so the user can copy it.
 
 ## Not in this ticket
 
@@ -58,5 +62,17 @@ link and the shortcut prints it for the reporter to paste.
       its heading, before the link, with tests.
 - [x] The skill, README and CONTRIBUTING.md say to paste the printed text.
 - [x] `tests/run` passes.
-- [ ] Checked in the browser by the reviewer: only the fixed fields are filled,
+- [x] Checked in the browser by the reviewer: only the fixed fields are filled,
       and pasted text can be deleted.
+- [x] The skill's step 6 has the agent show the cleaned draft from the
+      command's output in its last message, one code block per field, with a
+      skill test.
+
+## Checked in the browser (2026-11-25)
+
+By the reviewer, in Chromium on the desktop, signed in as Frestina. The link
+from `omaworks report --no-open --what-file … --errors-file …` on a fictional
+`example.sky-clock` filled the title, Plugin, Omarchy version and Plugin commit,
+and left What happens and Error lines empty. Text typed into What happens could
+be shortened and then deleted entirely, and stayed that way. Nothing was
+submitted, and no label or issue was created.

@@ -716,6 +716,21 @@ class AgentPromptTest(unittest.TestCase):
         self.assertEqual(len([s for s in steps if s[3:4].isdigit()]), 6)
         self.assertIn("stop", steps[-1].lower())
 
+    def test_the_skill_shows_the_cleaned_draft_in_the_last_message(self):
+        # Agents fold a command's output away, so the user copies the draft
+        # from the agent's last message instead.
+        with open(agent.SKILL) as f:
+            skill = f.read()
+        step6 = skill[skill.index("## 6."):]
+        for words in (
+            "In your last message",
+            "exactly as the command\nprinted it",
+            "not your own draft",
+            "one code block per field",
+            "under the headings What happens and Error lines",
+        ):
+            self.assertIn(words, step6)
+
 
 @unittest.skipUnless(GIT, "needs git")
 class CommandTest(unittest.TestCase):

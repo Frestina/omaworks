@@ -772,7 +772,9 @@ How it works (ticket 007):
   never reaches a shell. The skill has the agent write the files with its own
   file tool into a `mktemp -d` folder, pass only the paths, and remove the folder.
   The shortcut prints the draft for the reporter to paste, as above, so the
-  reporter can still change the agent's words before Submit.
+  reporter can still change the agent's words before Submit. Many agents fold a
+  command's output away, so the agent then shows the cleaned text from that
+  output in its last message, one code block per field, for the user to copy.
 - **Reading the files.** Each is read as UTF-8 and cleaned by
   `omaworks/clean.py`, line by line, before it is printed, so rule 3 holds even
   when the agent misses something. A missing, unreadable, non-UTF-8

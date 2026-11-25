@@ -51,9 +51,10 @@ Nothing is sent until you press Submit on GitHub.
 ## Limits
 
 `omaworks report --agent <plugin>` lets your default coding agent look into a
-plugin and write a draft for you to paste. Its skill forbids posting, and omaworks gives it no
-command that posts. But Omarchy starts agents with their approval prompts off, so
-an agent with its own GitHub access could still post if it ignored the skill.
+plugin and write a draft for you to paste. Its skill forbids posting, and
+omaworks gives it no command that posts. But Omarchy starts agents with their
+approval prompts off, so an agent with its own GitHub access could still post if
+it ignored the skill.
 
 ## License
 
