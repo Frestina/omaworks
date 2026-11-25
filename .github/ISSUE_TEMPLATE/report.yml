@@ -7,7 +7,7 @@ body:
     id: plugin
     attributes:
       label: Plugin
-      description: The plugin ID, as in the catalog.
+      description: The plugin ID, as in the catalog. For a plugin that is not in the marketplace, its GitHub repo URL.
       placeholder: example.sky-clock
     validations:
       required: true

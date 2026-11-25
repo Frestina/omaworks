@@ -125,6 +125,93 @@ version and result.
 A maintainer closing an issue as spam removes it from the counts. A reporter closing
 their own issue withdraws it.
 
+The details, decided in ticket 003 (2026-11-25):
+
+**When.** `.github/workflows/check-report.yml` runs on `issues` opened or edited
+with the `report` label. It fetches the issue again, so a run always checks the
+newest text, and it skips closed issues. The report's fields are read by the
+form's headings (`### Plugin` and so on). A missing heading is a missing field.
+
+**Plugin.** Either a catalog ID or a GitHub repo URL.
+
+- An ID passes when `catalog.json` lists it, in any case. The catalog is fetched on
+  every run. On 2026-11-25 it listed 7054 IDs, up to 63 characters long. Most have
+  a dot, but 281 have none, so the check doesn't require one.
+  An unknown ID gets a "did you mean" with the closest catalog ID, if one is close.
+- A repo URL is `https://github.com/<owner>/<repo>`. `http://`, no scheme, `www.`, a
+  trailing `/` or `.git` are fine. It is real when a GET to
+  `api.github.com/repos/<owner>/<repo>`, with the Action's token, answers with a
+  public repo. A redirect from a renamed repo is followed.
+- A repo URL that the catalog lists fails, and the comment names its ID. Reports on
+  a catalog plugin all go under its ID, which stays stable when the repo moves. One
+  repo can hold several plugins (Omarchy's own repo holds 40), so the comment lists
+  up to five IDs and says how many more there are.
+
+**Omarchy version.** `omarchy version` prints the pacman version of the `omarchy`
+package. Releases are `4.5.0-3`. Pre-releases attach the suffix, `4.5.0rc2-1` or
+`4.0.0beta3-1`, a convention set in omacom/omarchy-pkgs' PKGBUILD so pacman sorts
+them before the release. The tags are in omacom/omarchy: `v4.5.0`, `v4.5.0-rc2`,
+`v4.0.0-beta3`.
+
+- The check accepts both forms: the package form, and the tag form with or without
+  the `v` (`4.5.0`, `4.5.0-rc2`). A pacman epoch (`1:`) is dropped.
+- The version is real when its release names a tag in omacom/omarchy, checked with a
+  GET to `git/ref/tags/<tag>`. `4.5.0-3` needs `v4.5.0`. `4.5.0rc2-1` needs
+  `v4.5.0-rc2`.
+- The package revision isn't checked: the package repo only holds the current
+  package, and revisions are grouped anyway. An untagged pre-release fails. Some
+  4.0.x RCs were never tagged.
+- Development builds fail, since they belong to no release: `omarchy-dev`'s
+  `4.0.0.r7195.g3ac4365-1`, and `dev (<hash>)` from a source checkout.
+- A report's row is its release: `4.5.0` for `4.5.0-1` and `4.5.0-3`, `4.5.0-rc2` for
+  `4.5.0rc2-1`. See [reports.json](#reportsjson). The report keeps the full version.
+
+**Commit.** 7 to 40 hex digits, in any case.
+
+**Result.** Works, Works with problems or Broken, in any case.
+
+What happens and Error lines aren't checked.
+
+**Labels.** A passing report gets three:
+
+| Label | Example |
+| --- | --- |
+| `plugin:<id>` | `plugin:example.sky-clock` |
+| `repo:<owner>/<repo>` for a repo URL, lowercase | `repo:example-dev/weather-strip` |
+| `omarchy:<release>` | `omarchy:4.5.0`, `omarchy:4.5.0-rc2` |
+| `result:<result>` | `result:works`, `result:problems`, `result:broken` |
+
+- GitHub allows 50 characters in a label name. A longer name keeps its first 43
+  characters, then `~` and the first six hex digits of the full name's SHA-256. The
+  label's description holds the full ID.
+- The Action creates a label the first time it needs it.
+- The Action owns only `needs-fix` and labels starting `plugin:`, `repo:`,
+  `omarchy:` and `result:`. On each run it removes its own labels that no longer
+  fit, so an edit swaps them, and a failing report keeps only `needs-fix`. It never
+  touches any other label, such as `report`, `spam`, `test` or `needs-look`.
+
+**The comment.** One comment from `github-actions[bot]` that starts with the hidden
+marker `<!-- omaworks:check -->`. Later runs edit it and never add a second. When a
+report that failed passes, the comment says so. A report that passes the first time
+gets no comment.
+
+- The comment names each field and the rule it breaks. It never repeats the
+  reporter's text, so nothing in it can mention, link or render. The only values in
+  it are ones the check built, such as the tag `v4.5.9`, or plain catalog IDs.
+
+**Safety.**
+
+- The workflow's token has `issues: write` and `contents: read`, nothing else.
+- The report's text never goes into the workflow file through an expression and
+  never reaches a shell. The Python code reads the event file and talks to the REST
+  API with `urllib`.
+- The check reads with GET requests only: the catalog, Omarchy's tags and repo
+  lookups. The token goes only to `api.github.com`, never to the catalog's host,
+  and a redirect to another host is refused.
+- If the catalog or GitHub can't be read, the run fails before it changes anything,
+  so an outage never marks a report wrong. Re-running it from the Actions tab
+  checks the report again.
+
 ### Counting
 
 The rule has to fit in one sentence on the website: "The newest plugin version that
@@ -316,7 +403,8 @@ Other places should show the status, in this order:
 | Path | What |
 | --- | --- |
 | `.github/ISSUE_TEMPLATE/report.yml` | the issue form |
-| `.github/workflows/reports.yml` | checks reports, builds `reports.json` and the site |
+| `.github/workflows/check-report.yml` | checks each report as it is opened or edited |
+| `.github/workflows/build.yml` | builds `reports.json` and the site |
 | `bin/omaworks` | the shortcut, in Python |
 | `omaworks/` | the shared Python module: checking, counting, building the form link |
 | `LICENSE` | MIT, for the code |

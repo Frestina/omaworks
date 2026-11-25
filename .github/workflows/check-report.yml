@@ -1,0 +1,32 @@
+name: Check report
+
+# Checks a report when it is opened or edited. See SPEC.md, "Checking reports".
+# The report's text is untrusted. It is never put into this file through an
+# expression: the Python code reads the event file and fetches the issue.
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: check-report-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: contains(github.event.issue.labels.*.name, 'report')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - run: python3 -m omaworks.action
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

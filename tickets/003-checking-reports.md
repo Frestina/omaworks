@@ -41,7 +41,7 @@ gets labels that make it easy to find.
 
 ## Done when
 
-- [ ] Every check in the spec has a passing and a failing test.
-- [ ] A hostile body is handled as text, with a test.
+- [x] Every check in the spec has a passing and a failing test.
+- [x] A hostile body is handled as text, with a test.
 - [ ] The Action labels and comments correctly on the real repo, shown with test
       issues closed as `test`.
