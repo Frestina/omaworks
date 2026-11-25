@@ -44,8 +44,20 @@ and write the report, and stop at a filled-in form.
 - [x] The skill covers all six steps and the never-post rule.
 - [x] `--agent` starts the agent with the right prompt, with a test for the command
       line it builds.
-- [ ] One real run ended at a filled-in form, with nothing posted.
+- [x] One real run ended at a filled-in form, with nothing posted.
 - [x] The agent hands the draft over in files (`--what-file`, `--errors-file`),
       so no report or log text is ever quoted into a shell command, with tests.
 - [x] The spec says the agent starts in the current folder, never the plugin's,
       and why.
+
+## Tried on the owner's machine (2026-11-25)
+
+- The owner ran the setup as one script, on their own machine, with their
+  default agent. It used the fictional `example.sky-clock`, a local upstream one
+  commit ahead, and a symlink in the plugins folder. The symlink was removed
+  afterwards.
+- The agent noticed the newer upstream commit. The owner said not to update.
+- The form opened in the browser with the Omarchy version, the commit and What
+  happens filled in. Result was left for the owner to pick.
+- The agent tried to post nothing and did nothing unexpected. The owner closed
+  the tab without pressing Submit.
