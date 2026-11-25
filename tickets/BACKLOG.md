@@ -58,3 +58,10 @@ Work that waits, and why.
   for the form's fields. The look could also list reports updated since then,
   which includes every new comment. Waits until it happens. See
   [Moderation](../SPEC.md#moderation).
+- **Newer commits than the reports.** A row stays as its reports say after a fix
+  lands, which is right: nobody has run the fix. But the page gives no hint that
+  something changed. When the plugin's repo has commits newer than the ones a
+  row's reports are on, the row could say "The plugin has newer commits than
+  these reports. If you run one, report it." A fact, never a verdict, and it asks
+  for the report that settles the row. One GET per row per build. Waits until a
+  reported plugin gets a fix. See [Counting](../SPEC.md#counting).
