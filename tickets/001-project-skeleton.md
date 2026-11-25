@@ -37,4 +37,4 @@ and the files a public repo needs.
 
 - [ ] `tests/run` passes locally and in CI.
 - [ ] CI runs on the two Python versions.
-- [ ] README and LICENSE are in place, with no personal details.
+- [x] README and LICENSE are in place, with no personal details.

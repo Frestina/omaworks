@@ -362,7 +362,9 @@ Decided:
    (2026-11-25). The Action's checker and counting and the `omaworks` command share
    one module, so both run the same code and the same tests. Python 3 is on every
    Omarchy machine because many default packages need it. omaupdateimpact relies on
-   it the same way.
+   it the same way. CI tests on 3.11 and 3.15 (2026-11-25): the oldest and newest
+   that both Arch (core has 3.14, the AUR has 3.9 to 3.15) and the Ubuntu runner
+   (3.11 to 3.15) have. So the code uses nothing newer than 3.11.
 7. **License.** MIT for the code. Reports are released as CC0, said on the form, so
    any tool can reuse `reports.json` (2026-11-25).
 8. **Telling the marketplace.** Later, in steps (2026-11-25). See
