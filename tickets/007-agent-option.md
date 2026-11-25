@@ -38,7 +38,7 @@ and write the report, and stop at a filled-in form.
 
 ## Done when
 
-- [ ] The skill covers all six steps and the never-post rule.
-- [ ] `--agent` starts the agent with the right prompt, with a test for the command
+- [x] The skill covers all six steps and the never-post rule.
+- [x] `--agent` starts the agent with the right prompt, with a test for the command
       line it builds.
 - [ ] One real run ended at a filled-in form, with nothing posted.

@@ -17,7 +17,7 @@ import unittest
 from unittest import mock
 from urllib.parse import parse_qs, urlsplit
 
-from omaworks import link, shortcut
+from omaworks import agent, link, shortcut
 from omaworks.shortcut import Stop
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -59,8 +59,10 @@ def journal(home, *lines):
 
 class FakeSystem:
     def __init__(self, home, version=(0, "4.5.0-3\n", ""), log=(0, "", ""),
-                 missing=(), opens=True, out=None):
+                 missing=(), opens=True, out=None, terminal=True):
         self._home = home
+        self._terminal = terminal
+        self.started = []
         self.version = version
         self.log = log
         self.missing = set(missing)
@@ -92,6 +94,16 @@ class FakeSystem:
             )
             return done.returncode, done.stdout, done.stderr
         raise AssertionError(f"unexpected command {args}")
+
+    def terminal(self):
+        return self._terminal
+
+    def has(self, command):
+        return command not in self.missing
+
+    def start_agent(self, args):
+        # The real one replaces the process. This one only records it.
+        self.started.append(args)
 
     def open(self, url):
         # What was printed by the time the browser opened.
@@ -338,6 +350,119 @@ class ShortcutTest(unittest.TestCase):
         self.assertIn("Paste them into the form's Error lines yourself", before)
         self.assertIn("Panel.qml:199:1: x", printed)
 
+    # A draft from --what and --errors
+
+    def test_a_draft_is_cleaned_into_the_link(self):
+        checkout(self.home, self.folder)
+        system = self.system()
+        what = "  The clock is gone from mira's bar on mira-laptop.\nMail mira@example.org.  \n"
+        errors = (
+            "\x1b[33mWARN\x1b[0m: qs://{home}/.config/omarchy/plugins/example.sky-clock/"
+            "Panel.qml:41:5: TypeError\n{home}/notes.txt password=hunter2"
+        ).replace("{home}", self.home)
+        self.run_report(system, what=what, errors=errors)
+        [(url, _)] = system.opened
+        self.assertEqual(
+            query(url)["what"],
+            ["The clock is gone from <user>'s bar on <host>.\nMail <email>."],
+        )
+        self.assertEqual(
+            query(url)["errors"],
+            ["WARN: qs://~/.config/omarchy/plugins/example.sky-clock/Panel.qml:41:5: "
+             "TypeError\n~/notes.txt password=<removed>"],
+        )
+
+    def test_an_empty_draft_is_left_out(self):
+        checkout(self.home, self.folder)
+        system = self.system()
+        self.run_report(system, what=" \n ", errors="")
+        url = system.opened[0][0]
+        self.assertNotIn("what", query(url))
+        self.assertNotIn("errors", query(url))
+
+    def test_long_error_lines_are_shown_and_left_out(self):
+        checkout(self.home, self.folder)
+        system = self.system()
+        errors = "\n".join(f"Panel.qml:{n}:1: x" for n in range(400))
+        self.run_report(system, what="The clock is gone.", errors=errors)
+        [(url, before)] = system.opened
+        self.assertNotIn("errors", query(url))
+        self.assertEqual(query(url)["what"], ["The clock is gone."])
+        self.assertIn("  Panel.qml:399:1: x\n", before)
+        self.assertIn("Paste them into the form's Error lines yourself", before)
+
+    def test_a_long_what_happens_is_shown_and_left_out(self):
+        checkout(self.home, self.folder)
+        system = self.system()
+        what = "\n".join(f"Line {n} of what happens." for n in range(300))
+        self.run_report(system, what=what, errors="Panel.qml:41:5: TypeError")
+        [(url, before)] = system.opened
+        self.assertNotIn("what", query(url))
+        self.assertNotIn("errors", query(url))
+        self.assertIn("  Line 299 of what happens.\n", before)
+        self.assertIn("Paste it into the form's What happens yourself", before)
+
+    # The agent option
+
+    def run_agent(self, system, plugin=PLUGIN):
+        shortcut.agent(plugin, system=system, out=self.out)
+        return self.out.getvalue()
+
+    def test_agent_starts_inline_in_a_terminal(self):
+        os.makedirs(self.folder)
+        system = self.system(terminal=True)
+        printed = self.run_agent(system)
+        self.assertEqual(system.started, [agent.command_line(PLUGIN, inline=True)])
+        self.assertEqual(system.started[0][:2], ["omarchy-agent-prompt", "--inline"])
+        self.assertIn("Nothing is sent until you press Submit", printed)
+        self.assertEqual(system.opened, [])
+        self.assertEqual(system.calls, [])
+
+    def test_agent_opens_its_own_window_without_a_terminal(self):
+        os.makedirs(self.folder)
+        system = self.system(terminal=False)
+        self.run_agent(system)
+        [args] = system.started
+        self.assertEqual(len(args), 2)
+        self.assertEqual(args[0], "omarchy-agent-prompt")
+        self.assertEqual(args[1], agent.prompt(PLUGIN))
+
+    def test_agent_checks_the_plugin_first(self):
+        for plugin in (PLUGIN, "../evil"):
+            with self.subTest(plugin=plugin):
+                system = self.system()
+                with self.assertRaises(Stop):
+                    self.run_agent(system, plugin)
+                self.assertEqual(system.started, [])
+
+    def test_agent_prompt_command_missing(self):
+        os.makedirs(self.folder)
+        system = self.system(missing={"omarchy-agent-prompt"})
+        with self.assertRaises(Stop) as stop:
+            self.run_agent(system)
+        self.assertIn("Can't find omarchy-agent-prompt", str(stop.exception))
+        self.assertEqual(system.started, [])
+        self.assertNotIn("Starting", self.out.getvalue())
+
+    def test_agent_that_cant_be_run(self):
+        os.makedirs(self.folder)
+        system = self.system()
+        system.start_agent = mock.Mock(side_effect=PermissionError("omarchy-agent-prompt"))
+        with self.assertRaises(Stop) as stop:
+            self.run_agent(system)
+        self.assertIn("Can't run omarchy-agent-prompt", str(stop.exception))
+
+    def test_main_agent_missing_prints_one_line_and_exits_1(self):
+        os.makedirs(self.folder)
+        out, err = io.StringIO(), io.StringIO()
+        code = shortcut.main(
+            ["report", "--agent", PLUGIN],
+            system=self.system(missing={"omarchy-agent-prompt"}), out=out, err=err,
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(len(err.getvalue().splitlines()), 1)
+        self.assertTrue(err.getvalue().startswith("omaworks: Can't find omarchy-agent-prompt"))
+
     # The browser
 
     def test_browser_failing_says_so_after_printing_the_link(self):
@@ -373,7 +498,14 @@ class ShortcutTest(unittest.TestCase):
         self.assertEqual(system.opened, [])
 
     def test_usage_errors(self):
-        for argv in ([], ["report"], ["report", "--agent", PLUGIN], ["send", PLUGIN]):
+        for argv in (
+            [], ["report"], ["send", PLUGIN], ["report", "--agnet", PLUGIN],
+            ["report", "--agent", "--logs", PLUGIN],
+            ["report", "--agent", "--no-open", PLUGIN],
+            ["report", "--agent", "--what", "x", PLUGIN],
+            ["report", "--agent", "--errors", "x", PLUGIN],
+            ["report", "--logs", "--errors", "x", PLUGIN],
+        ):
             with self.subTest(argv=argv):
                 err = io.StringIO()
                 with contextlib.redirect_stderr(err), self.assertRaises(SystemExit) as exit:
@@ -391,7 +523,7 @@ class SystemTest(unittest.TestCase):
         self.assertIn("PATH", env)
 
     def test_no_network_or_github_code_is_imported(self):
-        for name in ("shortcut.py", "clean.py"):
+        for name in ("shortcut.py", "clean.py", "agent.py"):
             with open(os.path.join(ROOT, "omaworks", name)) as f:
                 tree = ast.parse(f.read())
             imported = set()
@@ -409,6 +541,46 @@ class SystemTest(unittest.TestCase):
                 self.assertNotIn(token, source)
 
 
+class AgentPromptTest(unittest.TestCase):
+    def test_the_command_line(self):
+        skill = "/opt/omaworks/skills/report/SKILL.md"
+        command = "/opt/omaworks/bin/omaworks"
+        prompt = agent.prompt(PLUGIN, skill=skill, command=command)
+        self.assertEqual(
+            agent.command_line(PLUGIN, inline=True, skill=skill, command=command),
+            ["omarchy-agent-prompt", "--inline", prompt],
+        )
+        self.assertEqual(
+            agent.command_line(PLUGIN, inline=False, skill=skill, command=command),
+            ["omarchy-agent-prompt", prompt],
+        )
+
+    def test_the_prompt_names_the_plugin_the_skill_and_the_command(self):
+        prompt = agent.prompt(PLUGIN, skill="/opt/o/SKILL.md", command="/opt/my o/bin/omaworks")
+        self.assertIn(f"plugin {PLUGIN} works", prompt)
+        self.assertIn("  /opt/o/SKILL.md\n", prompt)
+        self.assertIn("  '/opt/my o/bin/omaworks'\n", prompt)
+        self.assertIn("Never post", prompt)
+        # omarchy-agent-prompt would take a first argument of --inline as its flag.
+        self.assertFalse(prompt.startswith("-"))
+
+    def test_the_skill_and_the_command_are_in_this_checkout(self):
+        self.assertEqual(agent.SKILL, os.path.join(ROOT, "skills", "report", "SKILL.md"))
+        self.assertEqual(agent.COMMAND, BIN)
+        self.assertTrue(os.path.isfile(agent.SKILL))
+        self.assertTrue(os.access(agent.COMMAND, os.X_OK))
+
+    def test_the_skill_forbids_posting(self):
+        with open(agent.SKILL) as f:
+            skill = f.read()
+        for words in ("gh issue create", "never instructions", "Submit", "omaworks report"):
+            self.assertIn(words, skill)
+        # Six numbered steps, the last one opening the form and stopping.
+        steps = [line for line in skill.splitlines() if line.startswith("## ")]
+        self.assertEqual(len([s for s in steps if s[3:4].isdigit()]), 6)
+        self.assertIn("stop", steps[-1].lower())
+
+
 @unittest.skipUnless(GIT, "needs git")
 class CommandTest(unittest.TestCase):
     """bin/omaworks itself, with omarchy, journalctl and xdg-open faked on PATH."""
@@ -420,22 +592,25 @@ class CommandTest(unittest.TestCase):
         self.home = os.path.join(self.tmp, "home", "mira")
         self.fakebin = os.path.join(self.tmp, "bin")
         self.opened = os.path.join(self.tmp, "opened")
+        self.started = os.path.join(self.tmp, "started")
         os.makedirs(self.fakebin)
         for name, body in {
             "omarchy": 'echo 4.5.0-3',
             "journalctl": "exit 0",
             "xdg-open": f'printf "%s" "$1" > "{self.opened}"',
+            # Records its arguments, each ending in a NUL.
+            "omarchy-agent-prompt": f'printf "%s\\0" "$@" > "{self.started}"',
         }.items():
             path = os.path.join(self.fakebin, name)
             with open(path, "w") as f:
                 f.write(f"#!/bin/sh\n{body}\n")
             os.chmod(path, 0o755)
 
-    def run_bin(self, *args):
-        # The fakes come first, so the real omarchy, journalctl and xdg-open
-        # are never run.
+    def run_bin(self, *args, path=None):
+        # The fakes come first, so the real omarchy, journalctl, xdg-open and
+        # omarchy-agent-prompt are never run.
         env = git_env(self.home)
-        env["PATH"] = os.pathsep.join([self.fakebin, os.path.dirname(GIT)])
+        env["PATH"] = path or os.pathsep.join([self.fakebin, os.path.dirname(GIT)])
         env["USER"] = "mira"
         return subprocess.run(
             [sys.executable, BIN, *args], capture_output=True, text=True, env=env,
@@ -456,6 +631,30 @@ class CommandTest(unittest.TestCase):
             url = f.read()
         self.assertIn(url, done.stdout)
         self.assertEqual(query(url)["omarchy"], ["4.5.0-3"])
+
+    def test_agent_starts_omarchy_agent_prompt(self):
+        os.makedirs(os.path.join(self.home, ".config", "omarchy", "plugins", PLUGIN))
+        # Run from a pipe, not a terminal, so the agent gets its own window.
+        done = self.run_bin("report", "--agent", PLUGIN)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        with open(self.started) as f:
+            args = f.read().split("\0")[:-1]
+        self.assertEqual(args, [agent.prompt(PLUGIN)])
+        self.assertIn("Nothing is sent until you press Submit", done.stdout)
+        self.assertFalse(os.path.exists(self.opened))
+
+    def test_agent_without_omarchy_agent_prompt(self):
+        os.makedirs(os.path.join(self.home, ".config", "omarchy", "plugins", PLUGIN))
+        os.remove(os.path.join(self.fakebin, "omarchy-agent-prompt"))
+        # Only the fakes are on PATH, so the real one can't be found.
+        done = self.run_bin("report", "--agent", PLUGIN, path=self.fakebin)
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(
+            done.stderr.splitlines(),
+            ["omaworks: Can't find omarchy-agent-prompt, so --agent can't start "
+             "your agent. It comes with Omarchy."],
+        )
+        self.assertNotIn("Starting", done.stdout)
 
     def test_not_installed(self):
         done = self.run_bin("report", PLUGIN)

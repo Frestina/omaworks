@@ -574,6 +574,9 @@ How it decides (ticket 006):
   prints one plain line starting `omaworks:` and exits with 1. The form is not
   opened.
 - **`--no-open`** prints the link without opening the browser.
+- **`--what` and `--errors`** fill What happens and Error lines with the given
+  text, cleaned as below. The agent option uses them. See
+  [The agent option](#the-agent-option).
 - **The browser.** The link is printed before `xdg-open` runs. If `xdg-open`
   fails, the shortcut says so and the reporter opens the printed link.
 - **A plugin's lines.** A line is the plugin's when it names a path under
@@ -612,6 +615,29 @@ any default agent. The skill tells the agent to:
 5. write the draft and remove personal details;
 6. open the filled-in form with `omaworks report` and stop.
 
+How it works (ticket 007):
+
+- **The plugin first.** `--agent` checks the plugin ID and its folder as the
+  shortcut does, so a typo stops before an agent starts. It reads nothing else.
+  The agent reads the versions itself, with `omaworks report --no-open`.
+- **The command line.** `omarchy-agent-prompt --inline <prompt>` when both input
+  and output are a terminal, `omarchy-agent-prompt <prompt>` otherwise. The prompt
+  is one argument. It names the plugin, the full path of `skills/report/SKILL.md`
+  and the full path of `bin/omaworks` in the same checkout, since `omaworks` may
+  not be on the PATH. `omaworks` replaces itself with `omarchy-agent-prompt`, and
+  the agent starts in the current folder.
+- **Missing.** No `omarchy-agent-prompt` on the PATH prints one `omaworks:` line
+  and exits with 1, before anything else is printed.
+- **Alone.** `--agent` can't be combined with `--logs`, `--what`, `--errors` or
+  `--no-open`. That is a usage error.
+- **The draft.** The agent fills the form through two options of the shortcut:
+  `--what <text>` for What happens and `--errors <lines>` for Error lines. Both
+  are cleaned by `omaworks/clean.py`, line by line, before they go into the link,
+  so rule 3 holds even when the agent misses something. `--errors` and `--logs`
+  both fill Error lines, so they can't be combined. When the link would be too
+  long, the error lines are left out first and then What happens, each printed
+  for the reporter to paste.
+
 **Limit.** Omarchy starts agents with their approval prompts off. The skill forbids
 posting and omaworks gives the agent no command that posts, but an agent with its own
 GitHub access could still post if it ignored the skill. The README says so plainly.
@@ -647,7 +673,7 @@ Other places should show the status, in this order:
 | `.github/workflows/check-report.yml` | checks each report as it is opened or edited |
 | `.github/workflows/build.yml` | builds `reports.json` and the site |
 | `bin/omaworks` | the shortcut, in Python |
-| `omaworks/` | the shared Python module: checking, counting, building the form link, the shortcut and its cleaning |
+| `omaworks/` | the shared Python module: checking, counting, building the form link, the shortcut and its cleaning, the agent option |
 | `LICENSE` | MIT, for the code |
 | `skills/report/SKILL.md` | the agent's method for writing a report |
 | `skills/moderate/SKILL.md` | the agent's method for looking at new reports |
@@ -733,7 +759,11 @@ Checked on 2026-11-25:
   `omarchy-agent --prompt`. Without `--inline` the agent opens in its own window
   (`omarchy-launch-tui`), which is what `omarchy agent crash` does. With `--inline`
   it runs in the current terminal. A bar button uses the window. `omaworks report
-  --agent` from a terminal uses `--inline`.
+  --agent` from a terminal uses `--inline`. Rechecked in ticket 007: it joins all
+  its arguments into one prompt with spaces, and takes `--inline` only as its
+  first argument. `omarchy-agent` moves to `~/Work` when started in the home
+  folder and that folder exists. `omarchy agent crash` points its prompt at the
+  skill file by full path, the same way.
 - **Renamed plugins.** The catalog has no rename field. Its registry only has
   `retiredPluginIds`. Omarchy PR #17929 (open) would let a manifest declare
   `"renamedFrom": ["author.old-name"]`. omaworks follows `renamedFrom` when a

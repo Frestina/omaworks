@@ -3,7 +3,9 @@
 See SPEC.md, "The shortcut". It reads the Omarchy version and the plugin's
 commit on this machine, builds the link to the report form, prints it and
 opens it in the browser. With --logs it adds the plugin's lines from the
-shell's log, cleaned of personal details and shown first.
+shell's log, cleaned of personal details and shown first. --what and
+--errors take a draft's text, cleaned the same way. --agent hands the
+report to the default coding agent instead: see omaworks/agent.py.
 
 It sends nothing and needs no GitHub token. The reporter presses Submit.
 Anything it can't find stops it with a plain message. Nothing is guessed.
@@ -15,10 +17,12 @@ import argparse
 import os
 import pwd
 import re
+import shutil
 import socket
 import subprocess
 import sys
 
+from omaworks import agent as agent_option
 from omaworks.check import COMMIT_RE, DEV_RE, ID_RE, release_of
 from omaworks.clean import Cleaner, keep_plugin, strip_colours
 from omaworks.link import LinkTooLong, build_report_link
@@ -80,6 +84,24 @@ class System:
         except subprocess.TimeoutExpired:
             return 124, "", f"took longer than {TIMEOUT} seconds"
         return done.returncode, done.stdout, done.stderr
+
+    @staticmethod
+    def terminal():
+        """True when this runs in a terminal, for both input and output."""
+        return sys.stdin.isatty() and sys.stdout.isatty()
+
+    @staticmethod
+    def has(command):
+        """True when command is on PATH."""
+        return shutil.which(command) is not None
+
+    @staticmethod
+    def start_agent(args):
+        """Replace this process with args. Raises OSError when it can't, before
+        anything is replaced."""
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.execvp(args[0], args)
 
     def open(self, url):
         """Open url with xdg-open. False when it says it failed."""
@@ -222,41 +244,80 @@ def log_lines(system, plugin):
     return lines
 
 
-def report(plugin, logs=False, open_browser=True, system=None, out=None):
-    """Build the link, print it and open it. Raises Stop."""
+def _draft(clean, text):
+    """The reporter's or the agent's text, cleaned line by line."""
+    if not text:
+        return None
+    lines = [clean.clean(line).rstrip() for line in text.strip().splitlines()]
+    return "\n".join(lines).strip() or None
+
+
+def _show(out, heading, text):
+    print(heading, file=out)
+    print("", file=out)
+    for line in text.splitlines():
+        print(f"  {line}", file=out)
+    print("", file=out)
+
+
+def report(plugin, logs=False, open_browser=True, system=None, out=None,
+           what=None, errors=None):
+    """Build the link, print it and open it. Raises Stop.
+
+    what and errors are a draft's What happens and Error lines. They are
+    cleaned of personal details before they go into the link.
+    """
     system = system or System()
     out = out or sys.stdout
     folder = plugin_folder(system, plugin)
     version = omarchy_version(system)
     commit = plugin_commit(system, plugin, folder)
 
-    errors = None
+    clean = cleaner(system, plugin)
+    what = _draft(clean, what)
+    errors = _draft(clean, errors)
     if logs:
         lines = log_lines(system, plugin)
         if lines:
             errors = "\n".join(lines)
-            print(
+            _show(
+                out,
                 "The plugin's lines from the shell's log, with personal details removed:",
-                file=out,
+                errors,
             )
-            print("", file=out)
-            for line in lines:
-                print(f"  {line}", file=out)
-            print("", file=out)
         else:
             print(f"The shell's log has no lines from {plugin} since the last boot.", file=out)
 
-    try:
-        link = build_report_link(plugin, version, commit, errors=errors)
-    except LinkTooLong:
-        if errors is None:
-            raise Stop("The link to the form is too long to open.") from None
-        link = build_report_link(plugin, version, commit)
+    def build():
+        try:
+            return build_report_link(plugin, version, commit, what=what, errors=errors)
+        except LinkTooLong:
+            return None
+
+    # Too long: the error lines go first, then What happens. Each is shown
+    # here for the reporter to paste.
+    link = build()
+    if link is None and errors is not None:
+        if not logs:
+            _show(out, "Error lines, with personal details removed:", errors)
+        errors = None
         print(
             "These lines make the link too long, so they are left out. Paste them "
             "into the form's Error lines yourself.",
             file=out,
         )
+        link = build()
+    if link is None and what is not None:
+        _show(out, "What happens, with personal details removed:", what)
+        what = None
+        print(
+            "This text makes the link too long, so it is left out. Paste it "
+            "into the form's What happens yourself.",
+            file=out,
+        )
+        link = build()
+    if link is None:
+        raise Stop("The link to the form is too long to open.")
 
     print(f"Omarchy {version}, {plugin} at {commit}.", file=out)
     if not open_browser:
@@ -266,6 +327,34 @@ def report(plugin, logs=False, open_browser=True, system=None, out=None):
     print(link, file=out)
     if not system.open(link):
         raise Stop("xdg-open couldn't open the browser. Open the link above yourself.")
+
+
+def agent(plugin, system=None, out=None):
+    """Start the default coding agent on the report. Raises Stop.
+
+    The plugin is checked first, so a typo doesn't start the agent. The
+    agent reads the versions itself, through `omaworks report`.
+    """
+    system = system or System()
+    out = out or sys.stdout
+    plugin_folder(system, plugin)
+    if not system.has(agent_option.PROMPT_COMMAND):
+        raise Stop(
+            f"Can't find {agent_option.PROMPT_COMMAND}, so --agent can't start "
+            "your agent. It comes with Omarchy."
+        )
+    args = agent_option.command_line(plugin, inline=system.terminal())
+    print(
+        f"Starting your default coding agent on {plugin}. It stops at the "
+        "filled-in form. Nothing is sent until you press Submit.",
+        file=out,
+    )
+    try:
+        system.start_agent(args)
+    except OSError:
+        raise Stop(
+            f"Can't run {agent_option.PROMPT_COMMAND}, so --agent can't start your agent."
+        ) from None
 
 
 def parser():
@@ -289,8 +378,21 @@ def parser():
         "with personal details removed",
     )
     cmd.add_argument(
+        "--what", metavar="TEXT",
+        help="fill in What happens with this text, with personal details removed",
+    )
+    cmd.add_argument(
+        "--errors", metavar="LINES",
+        help="fill in Error lines with these lines, with personal details removed",
+    )
+    cmd.add_argument(
         "--no-open", dest="open", action="store_false",
         help="print the link without opening the browser",
+    )
+    cmd.add_argument(
+        "--agent", action="store_true",
+        help="let your default coding agent look into it and fill in the form. "
+        "It stops at the form, and you press Submit",
     )
     return top
 
@@ -298,9 +400,27 @@ def parser():
 def main(argv=None, system=None, out=None, err=None):
     out = out or sys.stdout
     err = err or sys.stderr
-    args = parser().parse_args(argv)
+    top = parser()
+    args = top.parse_args(argv)
+    if args.agent:
+        given = [
+            flag for flag, used in (
+                ("--logs", args.logs), ("--what", args.what is not None),
+                ("--errors", args.errors is not None), ("--no-open", not args.open),
+            ) if used
+        ]
+        if given:
+            top.error(f"--agent can't be used with {', '.join(given)}: the agent fills in the form")
+    if args.logs and args.errors is not None:
+        top.error("--logs and --errors both fill in Error lines: use one")
     try:
-        report(args.plugin, logs=args.logs, open_browser=args.open, system=system, out=out)
+        if args.agent:
+            agent(args.plugin, system=system, out=out)
+        else:
+            report(
+                args.plugin, logs=args.logs, open_browser=args.open, system=system,
+                out=out, what=args.what, errors=args.errors,
+            )
     except Stop as stop:
         print(f"omaworks: {stop}", file=err)
         return 1
