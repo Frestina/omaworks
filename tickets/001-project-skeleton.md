@@ -35,6 +35,6 @@ and the files a public repo needs.
 
 ## Done when
 
-- [ ] `tests/run` passes locally and in CI.
-- [ ] CI runs on the two Python versions.
+- [x] `tests/run` passes locally and in CI.
+- [x] CI runs on the two Python versions.
 - [x] README and LICENSE are in place, with no personal details.
