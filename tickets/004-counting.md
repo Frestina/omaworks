@@ -41,7 +41,7 @@ worked out exactly as the spec says.
 
 ## Done when
 
-- [ ] Every rule in [Counting](../SPEC.md#counting) has a test.
-- [ ] `reports.json` matches the spec's format, and "no reports" is `none`, never
+- [x] Every rule in [Counting](../SPEC.md#counting) has a test.
+- [x] `reports.json` matches the spec's format, and "no reports" is `none`, never
       missing data read as works.
 - [ ] The file is live on GitHub Pages after a test report.

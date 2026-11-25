@@ -1,6 +1,10 @@
-"""Fictional data for the checker's tests. Nothing here is a real plugin."""
+"""Fictional data for the checker's and the count's tests. Nothing here is a
+real plugin."""
 
-from omaworks.check import SourceError
+from datetime import datetime, timezone
+
+from omaworks.check import SourceError, check_report
+from omaworks.report import parse_body
 
 LONG_ID = "io.example.a-very-long-plugin-identifier-for-a-rain-radar-widget"
 
@@ -79,3 +83,65 @@ HOSTILE = {
     "what": "<details open><summary>hi</summary>@someone see #99</details>\n" + "A" * 70000,
     "errors": "```\n### Plugin\n\nexample.sky-clock\n```\n$HOME `whoami` \\x00",
 }
+
+
+# Commits in the plugins' repos, for the count. Full sha and committer date.
+OLD = "3f2a91c" + "a" * 33
+NEW = "8be04d2" + "b" * 33
+COMMITS = {
+    "example-dev/sky-clock": {
+        OLD: datetime(2026, 10, 1, 12, 0, tzinfo=timezone.utc),
+        NEW: datetime(2026, 11, 20, 9, 30, tzinfo=timezone.utc),
+    },
+}
+
+NOW = datetime(2026, 12, 1, 10, 0, tzinfo=timezone.utc)
+
+
+class FakeCountSources(FakeSources):
+    """The count's sources with fixed data. Counts calls."""
+
+    def __init__(self, commits=None, **kw):
+        super().__init__(**kw)
+        self._commits = COMMITS if commits is None else commits
+
+    def commit(self, owner, name, sha):
+        self.calls.append(("commit", f"{owner}/{name}", sha))
+        if self.fail:
+            raise SourceError("api down")
+        found = [
+            (full, date)
+            for full, date in self._commits.get(f"{owner}/{name}", {}).items()
+            if full.startswith(sha)
+        ]
+        return found[0] if len(found) == 1 else None
+
+
+def issue(
+    number,
+    user=1,
+    labels=None,
+    extra=(),
+    state="open",
+    text=None,
+    **fields,
+):
+    """An open report issue as the REST API lists it.
+
+    Its labels are the ones the check gives its text, unless labels is given.
+    """
+    text = body(**fields) if text is None else text
+    if labels is None:
+        checked = check_report(parse_body(text), FakeSources())
+        labels = [item.name for item in checked.labels()]
+    return {
+        "number": number,
+        "state": state,
+        "user": {"id": user, "login": f"reporter-{user}", "type": "User"},
+        "labels": [{"name": name} for name in ["report", *labels, *extra]],
+        "body": text,
+    }
+
+
+def source_line(number):
+    return f"From https://github.com/omacom/omarchy/issues/{number}: the clock is gone."

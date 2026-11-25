@@ -249,6 +249,70 @@ Works, the page says "broken in older versions, reported working from commit
 release starts its own row, so old reports never decide a new version. omadb fades
 old reports because hardware reports have no version. These do.
 
+The details, decided in ticket 004 (2026-11-25), built in `omaworks/count.py`:
+
+**Which issues are reports.** An issue counts only when it is open, not a pull
+request, labelled `report`, and not labelled `spam` or `test`. So a report closed
+as spam, closed as test, or closed by its reporter never counts, and neither does
+an open one a maintainer has marked `spam` or `test`.
+
+**It must pass the check, now.** The count reads the body again with the same
+code as the check, and runs the same check. What needs the network (is the ID in
+the catalog, is the tag real, is the repo public) it takes from the labels the
+check left, since they record what the check found. Then the check's labels for
+the current text must be exactly the ones on the issue. So:
+
+- a report with `needs-fix`, or not yet checked, doesn't count;
+- a report edited into failing stops counting at the next build, even before the
+  check has run on the edit, because its text no longer fits its labels;
+- the commit comes from the body, since no label holds it.
+
+Why not trust the labels alone: no label holds the commit, and a label shortened
+to 50 characters can't give back a long ID. Why not run the whole check again:
+that fetches the 18 MB catalog and asks GitHub about every report on every build,
+and could disagree with the labels people see on the issue. Labels can only be set
+by the Action and maintainers, so trusting them for the network answers is safe.
+
+**One report per account.** The account is the GitHub user's ID, so a renamed
+account is still one account. Its newest report is the one opened last, the
+highest issue number. Not the last updated: anyone's comment changes that time.
+
+**The newest commit.** Commit hashes have no order, so the count asks the plugin's
+repo, with a GET to `api.github.com/repos/<owner>/<repo>/commits/<commit>`, and
+takes the committer date.
+
+- The repo is the catalog's `repo` for a catalog ID, or the reported repo itself.
+- Commits are looked up only when a row's reports name more than one commit, and
+  each one once per build. A row on one commit needs no order.
+- A short and a long spelling of one commit are one commit.
+- A commit the repo doesn't have, such as a local one never pushed, can't be put in
+  order. While any commit that counts was found, reports on commits that weren't
+  don't count. So a made-up commit can neither take over a row nor block it.
+- If none of them was found, for example when the repo isn't on GitHub or is gone,
+  nothing says which is newest. Then they all count together, and the row says
+  `"unordered": true`. Nothing is guessed.
+- Commits with the same date count together.
+- If GitHub can't be read, the build stops and the last file stays published.
+
+**History.** `fixedFrom` is set when the status is `works`, one commit is newest,
+and some report on an older commit says Broken, including a reporter's own report
+that their newer one replaced. It holds the newest commit as its reports spell it,
+the shortest spelling if they differ.
+
+**When it runs.** `.github/workflows/build.yml` builds and publishes the file:
+
+- on `issues` opened, edited, closed, reopened, labeled, unlabeled or deleted,
+  when the issue has, or just lost, the `report` label;
+- each time "Check report" finishes, since the check's own label changes start no
+  workflow (GitHub starts none for changes made with the Action's token);
+- once a day, and by hand from the Actions tab.
+
+It lists every open `report` issue through the REST API, all pages, with a token
+that can only read issues and contents. Builds run one at a time, and each reads
+every report afresh. The deploy job alone has `pages: write` and `id-token: write`,
+as GitHub's Pages deploy needs. No report text reaches the workflow file or a
+shell.
+
 ### Seeding
 
 An empty site gives nobody a reason to add the first report, so it starts with what
@@ -260,6 +324,14 @@ is already known.
   to the issue. The page shows them as "from Omarchy issue #N".
 - **They count once per source issue**, not once per account, since one account
   files them all. An issue that names several plugins gives one report per plugin.
+- **How the count finds the source** (decided in ticket 004, for 009 to follow):
+  the report carries the `from-issue` label, and its "What happens" field holds the
+  source issue's link, `https://github.com/omacom/omarchy/issues/<N>`, exactly in
+  that form. The same link twice is fine. No link, or links to two different
+  issues, and the report doesn't count, listed with `"why": "no-source"`. For each
+  plugin and Omarchy version, one report counts per source issue: the newest
+  opened. The owner's own first-hand reports have no `from-issue` label and count
+  as the owner's account, apart from the seeded ones.
 - **Only what the issue says.** The result and the line about what happens come
   from the issue. Nothing is guessed. If the issue doesn't name a plugin commit, the
   report uses the newest plugin commit from before the release that broke it.
@@ -309,8 +381,8 @@ its GitHub token is fine-grained: this one repo, issues only.
 
 ### reports.json
 
-The Action rebuilds one file on every change and publishes it with the site. Readers
-use only this file.
+The Action rebuilds one file on every change and publishes it with the site, at
+`https://frestina.github.io/omaworks/reports.json`. Readers use only this file.
 
 ```json
 {
@@ -318,10 +390,41 @@ use only this file.
   "plugins": {
     "example.sky-clock": {
       "4.5.0": {
-        "status": "broken",
-        "counts": {"works": 1, "problems": 0, "broken": 3},
+        "status": "works",
+        "counts": {"works": 2, "problems": 0, "broken": 0},
         "fixedFrom": "8be04d2",
-        "reports": [101, 104, 107, 112]
+        "reports": [
+          {"issue": 101, "version": "4.5.0-1", "commit": "3f2a91c", "result": "broken",
+           "counted": false, "why": "older-commit"},
+          {"issue": 104, "version": "4.5.0-3", "commit": "3f2a91c", "result": "broken",
+           "counted": false, "why": "older-commit", "fromIssue": 17794},
+          {"issue": 107, "version": "4.5.0-3", "commit": "3f2a91c", "result": "broken",
+           "counted": false, "why": "newer-report"},
+          {"issue": 112, "version": "4.5.0-3", "commit": "8be04d2", "result": "works",
+           "counted": true},
+          {"issue": 115, "version": "4.5.0-3", "commit": "8be04d2", "result": "works",
+           "counted": true}
+        ]
+      },
+      "4.5.0-rc2": {
+        "status": "broken",
+        "counts": {"works": 0, "problems": 0, "broken": 1},
+        "reports": [
+          {"issue": 120, "version": "4.5.0rc2-1", "commit": "3f2a91c", "result": "broken",
+           "counted": true}
+        ]
+      }
+    }
+  },
+  "repos": {
+    "example-dev/weather-strip": {
+      "4.5.0": {
+        "status": "problems",
+        "counts": {"works": 0, "problems": 1, "broken": 0},
+        "reports": [
+          {"issue": 123, "version": "4.5.0-3", "commit": "5c0ffee", "result": "problems",
+           "counted": true}
+        ]
       }
     }
   }
@@ -333,6 +436,34 @@ and `4.5.0-3` both count as `4.5.0`. Release candidates get their own row
 (`4.5.0-rc2`), because RC reports are the early warning for everyone else. Reports
 keep the full version. `status` is one of `none`, `works`, `problems`, `broken` and
 `mixed`.
+
+The fields, decided in ticket 004 (2026-11-25):
+
+- `generated` is UTC.
+- `plugins` holds catalog IDs, lowercase. `repos` holds plugins reported by repo
+  URL, as `owner/repo` in lowercase: these are "not in the marketplace". The two
+  never mix.
+- `counts` always has all three results. Its numbers are the reports that count.
+- `reports` lists every open report on the row that passes the check, oldest
+  first: the ones that count (`"counted": true`) and the history (`false`). So
+  every status links to the reports behind it, and to the older ones. `why` says
+  why one doesn't count: `newer-report` (the same account, or source issue, has a
+  newer one), `older-commit`, `commit-not-found` or `no-source` (see
+  [Seeding](#seeding)). `fromIssue` is the Omarchy issue a seeded report comes
+  from. `version` is as reported, and `commit` as reported in lowercase.
+- `fixedFrom` and `unordered` appear only when they apply. See
+  [Counting](#counting).
+- Closed reports, failing reports and their text never appear. The file holds no
+  free text from any report: only IDs, versions, commits and results that passed
+  the check's patterns, and issue numbers.
+
+**A missing plugin or version is `none`.** A row appears only when an open report
+that passes the check is on it. A reader treats a plugin, or a version of it, that
+isn't in the file as `none`, "No reports yet". Never as works, and never as "no
+known problems". A plugin whose reports are all withdrawn or closed as spam
+disappears the same way. `none` is written only for a row whose reports all don't
+count, such as a seeded report without its source link, so its reports are still
+listed.
 
 ### The website
 

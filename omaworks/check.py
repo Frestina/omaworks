@@ -199,6 +199,7 @@ class Catalog:
             raise SourceError("the catalog's plugins is not a list")
         self.ids = set()
         self.by_repo = {}
+        self.repo_of = {}  # catalog ID to its GitHub "owner/name", lowercase
         for plugin in plugins:
             if not isinstance(plugin, dict) or not isinstance(plugin.get("id"), str):
                 raise SourceError("a catalog entry has no id")
@@ -208,6 +209,7 @@ class Catalog:
             if match:
                 key = f"{match.group(1)}/{match.group(2)}".lower()
                 self.by_repo.setdefault(key, []).append(plugin_id)
+                self.repo_of[plugin_id] = key
         if not self.ids:
             raise SourceError("the catalog lists no plugins")
 

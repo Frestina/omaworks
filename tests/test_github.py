@@ -3,6 +3,7 @@ import json
 import unittest
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 
 from omaworks import github
 from omaworks.check import SourceError, label
@@ -110,6 +111,60 @@ class GitHubTest(unittest.TestCase):
         gh, opener = client((200, first), (200, [{"id": 100}]))
         self.assertEqual(len(gh.comments("example-owner/omaworks", 7)), 101)
         self.assertTrue(opener.requests[1].full_url.endswith("?per_page=100&page=2"))
+
+    def test_report_issues_are_the_open_ones_labelled_report_all_pages(self):
+        first = [{"number": n} for n in range(100)]
+        gh, opener = client((200, first), (200, [{"number": 100}]))
+        self.assertEqual(len(gh.report_issues("example-owner/omaworks")), 101)
+        urls = [request.full_url for request in opener.requests]
+        self.assertEqual(urls, [
+            "https://api.github.com/repos/example-owner/omaworks/issues"
+            f"?state=open&labels=report&per_page=100&page={n}"
+            for n in (1, 2)
+        ])
+        self.assertEqual({r.get_method() for r in opener.requests}, {"GET"})
+
+    def test_commit_lookup(self):
+        full = "3f2a91c" + "a" * 33
+        reply = {"sha": full, "commit": {"committer": {"date": "2026-10-01T12:00:00Z"}}}
+        gh, opener = client((200, reply))
+        found = gh.commit("example-dev", "sky-clock", "3f2a91c")
+        self.assertEqual(found, (full, datetime(2026, 10, 1, 12, 0, tzinfo=timezone.utc)))
+        request = opener.requests[0]
+        self.assertEqual(
+            request.full_url,
+            "https://api.github.com/repos/example-dev/sky-clock/commits/3f2a91c?per_page=1",
+        )
+        self.assertEqual(request.get_method(), "GET")
+        self.assertEqual(request.get_header("Authorization"), "Bearer secret-token")
+
+    def test_commit_not_found_is_none(self):
+        # 422 is GitHub's "No commit found for SHA", and an ambiguous short sha.
+        for status in (404, 409, 422, 451):
+            with self.subTest(status=status):
+                gh, _ = client((status, {"message": "No commit found"}))
+                self.assertIsNone(gh.commit("example-dev", "sky-clock", "3f2a91c"))
+
+    def test_commit_read_as_a_branch_name_is_none(self):
+        reply = {"sha": "b" * 40, "commit": {"committer": {"date": "2026-10-01T12:00:00Z"}}}
+        gh, _ = client((200, reply))
+        self.assertIsNone(gh.commit("example-dev", "sky-clock", "deadbee"))
+
+    def test_odd_commit_reply_or_outage_raises(self):
+        full = "3f2a91c" + "a" * 33
+        replies = [
+            (200, {"commit": {}}),
+            (200, {"sha": full, "commit": {}}),
+            (200, {"sha": full, "commit": {"committer": {"date": "yesterday"}}}),
+            (200, {"sha": full, "commit": {"committer": {"date": "2026-10-01T12:00:00"}}}),
+            (403, {"message": "API rate limit exceeded"}),
+            (500, {}),
+        ]
+        for reply in replies:
+            with self.subTest(reply=reply):
+                gh, _ = client(reply)
+                with self.assertRaises(SourceError):
+                    gh.commit("example-dev", "sky-clock", "3f2a91c")
 
     def test_oversized_reply_raises(self):
         gh, _ = client((200, b"[" + b" " * github.MAX_API_BYTES + b"]"))

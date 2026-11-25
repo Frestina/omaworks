@@ -1,0 +1,62 @@
+name: Build
+
+# Counts every open report and publishes reports.json to GitHub Pages. See
+# SPEC.md, "Counting" and "reports.json". The report's text is untrusted. It is
+# never put into this file through an expression: the Python code lists the
+# issues itself through the REST API.
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled, unlabeled, deleted]
+  # The check labels reports with GITHUB_TOKEN, and GitHub starts no workflow
+  # for that. So the build also runs each time the check finishes.
+  workflow_run:
+    workflows: [Check report]
+    types: [completed]
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+# One build at a time. A newer one waits, and each reads every report afresh.
+concurrency:
+  group: build-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      github.event_name != 'issues'
+      || contains(github.event.issue.labels.*.name, 'report')
+      || github.event.label.name == 'report'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - run: python3 -m omaworks.build _site/reports.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

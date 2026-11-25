@@ -25,3 +25,8 @@ Work that waits, and why.
   report that passes, and a spammer can pass with any public repo URL. Closing the
   report as `spam` leaves the label. Moderation (008) could delete Action-made
   labels that no open report uses. Waits until spam is seen.
+- **Caching commit dates between builds.** Each build asks GitHub for the date of
+  every commit on a row with reports on more than one commit. The Action's token
+  allows 1000 requests an hour. A commit's date never changes, so they could be
+  kept between builds. Waits until a build comes near the limit. See
+  [Counting](../SPEC.md#counting).

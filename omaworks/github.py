@@ -7,8 +7,10 @@ percent-encoded even then.
 """
 
 import json
+import re
 import urllib.error
 import urllib.request
+from datetime import datetime
 from urllib.parse import quote, urlsplit
 
 from omaworks.check import SourceError
@@ -21,6 +23,8 @@ USER_AGENT = "omaworks-check"
 # The catalog was 18 MB in November 2026. Anything far bigger is not it.
 MAX_CATALOG_BYTES = 200 * 1024 * 1024
 MAX_API_BYTES = 10 * 1024 * 1024
+
+FULL_SHA_RE = re.compile(r"[0-9a-f]{40}", re.ASCII)
 
 
 class _SameHostRedirects(urllib.request.HTTPRedirectHandler):
@@ -113,6 +117,34 @@ class GitHub:
         full_name = data.get("full_name")
         return full_name if isinstance(full_name, str) else None
 
+    def commit(self, owner, name, sha):
+        """(full sha, committer date) of a commit in a repo, or None.
+
+        sha may be short. per_page=1 keeps the commit's file list small. None
+        when GitHub has no such repo or commit, or the short sha is ambiguous.
+        """
+        status, data = self.request(
+            "GET",
+            f"/repos/{quote(owner, safe='')}/{quote(name, safe='')}"
+            f"/commits/{quote(sha, safe='')}?per_page=1",
+            allow=(404, 409, 422, 451),
+        )
+        if status != 200:
+            return None
+        full = data.get("sha") if isinstance(data, dict) else None
+        if not isinstance(full, str) or not FULL_SHA_RE.fullmatch(full):
+            raise SourceError(f"GitHub sent no sha for commit {sha}")
+        if not full.startswith(sha.lower()):
+            # sha was read as a branch or tag name, not as a commit.
+            return None
+        try:
+            date = datetime.fromisoformat(data["commit"]["committer"]["date"])
+        except (KeyError, TypeError, ValueError):
+            raise SourceError(f"GitHub sent no date for commit {sha}") from None
+        if date.tzinfo is None:
+            raise SourceError(f"GitHub sent a date without a time zone for commit {sha}")
+        return full, date
+
     def catalog(self):
         """The catalog's plugins list. Sent without the token."""
         request = urllib.request.Request(CATALOG_URL)
@@ -128,6 +160,12 @@ class GitHub:
         if not isinstance(data, dict) or "plugins" not in data:
             raise SourceError("the catalog has no plugins list")
         return data["plugins"]
+
+    # The report issues.
+
+    def report_issues(self, repo):
+        """Every open issue labelled report, all pages."""
+        return self.get_pages(f"/repos/{repo}/issues?state=open&labels=report")
 
     # The issue being checked.
 
